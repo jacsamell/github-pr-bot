@@ -98,6 +98,10 @@ class Review(BaseModel):
 {%- if question_str %}
     insights_from_user_answers: str = Field(description="shortly summarize the insights you gained from the user's answers to the questions")
 {%- endif %}
+    confidence_score_[1-100]: int = Field(description="Your confidence level in this analysis on a scale of 1-100, where 100 means completely confident and 1 means very uncertain. Consider factors like code clarity, completeness of context, and your ability to assess potential issues.")
+    complexity_score_[1-10]: int = Field(description="Rate the code complexity on a scale of 1-10, where 1 is very simple (basic variable assignments, simple function calls) and 10 is very complex (intricate algorithms, multiple design patterns, complex business logic).")
+    security_score_[1-10]: int = Field(description="Rate the security safety level on a scale of 1-10, where 10 means very secure (no security concerns) and 1 means high security risk. Consider data exposure, injection vulnerabilities, authentication issues, etc.")
+    auto_approve_recommendation: bool = Field(description="Based on your analysis, would you recommend this PR for automatic approval? Consider: low complexity, high confidence, no security issues, small size, and limited scope. Only recommend true for very safe, straightforward changes.")
     key_issues_to_review: List[KeyIssuesComponentLink] = Field("A short and diverse list (0-{{ num_max_findings }} issues) of high-priority bugs, problems or performance concerns introduced in the PR code, which the PR reviewer should further focus on and validate during the review process.")
 {%- if require_security_review %}
     security_concerns: str = Field(description="Does this PR code introduce possible vulnerabilities such as exposure of sensitive information (e.g., API keys, secrets, passwords), or security concerns like SQL injection, XSS, CSRF, and others ? Answer 'No' (without explaining why) if there are no possible issues. If there are security concerns or issues, start your answer with a short header, such as: 'Sensitive information exposure: ...', 'SQL injection: ...' etc. Explain your answer. Be specific and give examples if possible")
@@ -136,6 +140,14 @@ review:
 {%- endif %}
   relevant_tests: |
     No
+  confidence_score_[1-100]: |
+    85
+  complexity_score_[1-10]: |
+    4
+  security_score_[1-10]: |
+    9
+  auto_approve_recommendation: |
+    true
   key_issues_to_review:
     - relevant_file: |
         directory/xxx.py
@@ -254,15 +266,23 @@ review:
 {%- endif %}
   relevant_tests: |
     No
+  confidence_score_[1-100]: |
+    85
+  complexity_score_[1-10]: |
+    4
+  security_score_[1-10]: |
+    9
+  auto_approve_recommendation: |
+    true
   key_issues_to_review:
     - relevant_file: |
-        ...
+        directory/xxx.py
       issue_header: |
-        ...
+        Possible Bug
       issue_content: |
         ...
-      start_line: ...
-      end_line: ...
+      start_line: 12
+      end_line: 14
     - ...
   security_concerns: |
     No

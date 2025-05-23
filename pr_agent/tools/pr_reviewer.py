@@ -124,10 +124,10 @@ class PRReviewer:
             if self.incremental.is_incremental and not self._can_run_incremental_review():
                 return None
 
-            # if isinstance(self.args, list) and self.args and self.args[0] == 'auto_approve':
-            #     get_logger().info(f'Auto approve flow PR: {self.pr_url} ...')
-            #     self.auto_approve_logic()
-            #     return None
+            if isinstance(self.args, list) and self.args and self.args[0] == 'auto_approve':
+                get_logger().info(f'Auto approve flow PR: {self.pr_url} ...')
+                await self.auto_approve_logic()
+                return None
 
             get_logger().info(f'Reviewing PR: {self.pr_url} ...')
             relevant_configs = {'pr_reviewer': dict(get_settings().pr_reviewer),
@@ -226,6 +226,7 @@ class PRReviewer:
         last_key = 'security_concerns'
         data = load_yaml(self.prediction.strip(),
                          keys_fix_yaml=["ticket_compliance_check", "estimated_effort_to_review_[1-5]:", "security_concerns:", "key_issues_to_review:",
+                                        "confidence_score_[1-100]:", "complexity_score_[1-10]:", "security_score_[1-10]:", "auto_approve_recommendation:",
                                         "relevant_file:", "relevant_line:", "suggestion:"],
                          first_key=first_key, last_key=last_key)
         github_action_output(data, 'review')
@@ -405,16 +406,210 @@ class PRReviewer:
             except Exception as e:
                 get_logger().error(f"Failed to set review labels, error: {e}")
 
-    def auto_approve_logic(self):
+    async def auto_approve_logic(self):
         """
-        Auto-approve a pull request if it meets the conditions for auto-approval.
+        Smart auto-approve a pull request based on AI analysis and custom scoring.
         """
-        if get_settings().config.enable_auto_approval:
-            is_auto_approved = self.git_provider.auto_approve()
-            if is_auto_approved:
-                get_logger().info("Auto-approved PR")
-                self.git_provider.publish_comment("Auto-approved PR")
-        else:
+        if not get_settings().config.enable_auto_approval:
             get_logger().info("Auto-approval option is disabled")
             self.git_provider.publish_comment("Auto-approval option for PR-Agent is disabled. "
                                               "You can enable it via a [configuration file](https://github.com/Codium-ai/pr-agent/blob/main/docs/REVIEW.md#auto-approval-1)")
+            return
+
+        try:
+            # First, run the AI review to get our custom scoring
+            await retry_with_fallback_models(self._prepare_prediction, model_type=ModelType.REGULAR)
+            if not self.prediction:
+                get_logger().info("No AI prediction available for auto-approval")
+                return
+
+            # Parse the review data to get our custom scores
+            review_data = self._parse_review_data()
+            if not review_data:
+                get_logger().info("Failed to parse review data for auto-approval")
+                return
+
+            # Make the auto-approval decision
+            should_approve, reason, details = self._evaluate_auto_approval(review_data)
+
+            if should_approve:
+                is_auto_approved = self.git_provider.auto_approve()
+                if is_auto_approved:
+                    get_logger().info(f"Auto-approved PR: {reason}")
+                    self.git_provider.publish_comment(f"🤖 **Auto-approved PR**\n\n**Reason**: {reason}\n\n**Analysis Details**:\n{details}\n\n_This PR meets all auto-approval criteria._")
+                else:
+                    get_logger().warning("Failed to auto-approve PR via git provider")
+                    self.git_provider.publish_comment(f"⚠️ **Auto-approval recommended but failed**\n\n**Reason**: {reason}\n\n**Analysis Details**:\n{details}")
+            else:
+                get_logger().info(f"Auto-approval declined: {reason}")
+                self.git_provider.publish_comment(f"🔍 **Manual review required**\n\n**Reason**: {reason}\n\n**Analysis Details**:\n{details}")
+
+        except Exception as e:
+            get_logger().error(f"Error in auto-approval logic: {e}")
+            self.git_provider.publish_comment("❌ **Auto-approval failed due to an error**. Manual review required.")
+
+    def _parse_review_data(self):
+        """Parse the AI prediction to extract review data"""
+        try:
+            first_key = 'review'
+            last_key = 'security_concerns'
+            data = load_yaml(self.prediction.strip(),
+                             keys_fix_yaml=["ticket_compliance_check", "estimated_effort_to_review_[1-5]:", "security_concerns:", "key_issues_to_review:",
+                                            "confidence_score_[1-100]:", "complexity_score_[1-10]:", "security_score_[1-10]:", "auto_approve_recommendation:",
+                                            "relevant_file:", "relevant_line:", "suggestion:"],
+                             first_key=first_key, last_key=last_key)
+            
+            if 'review' not in data:
+                get_logger().error("No review data found in AI prediction")
+                return None
+                
+            return data['review']
+        except Exception as e:
+            get_logger().error(f"Failed to parse review data: {e}")
+            return None
+
+    def _evaluate_auto_approval(self, review_data):
+        """
+        Smart auto-approval logic based on AI analysis and PR metrics
+        Returns: (should_approve: bool, reason: str, details: str)
+        """
+        # Get configurable thresholds
+        config = get_settings().config
+        confidence_threshold = getattr(config, 'auto_approve_confidence_threshold', 85)
+        complexity_threshold = getattr(config, 'auto_approve_complexity_threshold', 5)
+        security_threshold = getattr(config, 'auto_approve_security_threshold', 8)
+        effort_threshold = getattr(config, 'auto_approve_effort_threshold', 3)
+        max_files = getattr(config, 'auto_approve_max_files', 5)
+        max_lines = getattr(config, 'auto_approve_max_lines', 200)
+        max_issues = getattr(config, 'auto_approve_max_issues', 3)
+
+        # Extract AI scores (with safe defaults)
+        confidence = self._safe_extract_score(review_data.get('confidence_score_[1-100]'), 1, 100, 0)
+        complexity = self._safe_extract_score(review_data.get('complexity_score_[1-10]'), 1, 10, 10)
+        security = self._safe_extract_score(review_data.get('security_score_[1-10]'), 1, 10, 0)
+        effort = self._safe_extract_score(review_data.get('estimated_effort_to_review_[1-5]'), 1, 5, 5)
+        ai_recommends = review_data.get('auto_approve_recommendation', False)
+        
+        # Convert string boolean if needed
+        if isinstance(ai_recommends, str):
+            ai_recommends = ai_recommends.lower() in ['true', 'yes', '1']
+
+        # Extract other data
+        issues = review_data.get('key_issues_to_review', [])
+        security_concerns = review_data.get('security_concerns', '')
+        has_security_issues = security_concerns.lower() not in ['no', 'none', '']
+
+        # Get PR metrics
+        pr_files = self.git_provider.get_num_of_files()
+        pr_additions = getattr(self.git_provider.pr, 'additions', 0)
+        pr_deletions = getattr(self.git_provider.pr, 'deletions', 0)
+        total_lines = pr_additions + pr_deletions
+        author = getattr(self.git_provider.pr, 'user', {}).get('login', 'unknown')
+        
+        # Build details string
+        details = f"""
+- **Confidence Score**: {confidence}/100 (threshold: ≥{confidence_threshold})
+- **Complexity Score**: {complexity}/10 (threshold: ≤{complexity_threshold})
+- **Security Score**: {security}/10 (threshold: ≥{security_threshold})
+- **Effort Score**: {effort}/5 (threshold: ≤{effort_threshold})
+- **Files Changed**: {pr_files} (threshold: ≤{max_files})
+- **Lines Changed**: +{pr_additions}/-{pr_deletions} (total: {total_lines}, threshold: ≤{max_lines})
+- **Issues Found**: {len(issues)} (threshold: ≤{max_issues})
+- **AI Recommendation**: {ai_recommends}
+- **Author**: {author}
+"""
+
+        # AUTO-APPROVAL DECISION LOGIC
+        
+        # Check for immediate disqualifiers
+        if has_security_issues and security < security_threshold:
+            return False, f"Security concerns detected (score: {security}/{security_threshold})", details
+            
+        if len(issues) > max_issues:
+            return False, f"Too many issues found ({len(issues)}/{max_issues})", details
+            
+        if total_lines > max_lines:
+            return False, f"Large change size ({total_lines}/{max_lines} lines)", details
+            
+        if pr_files > max_files:
+            return False, f"Too many files changed ({pr_files}/{max_files})", details
+            
+        if effort > effort_threshold:
+            return False, f"High review effort required ({effort}/{effort_threshold})", details
+
+        # Check for critical issues
+        critical_issues = [issue for issue in issues if 
+                          any(word in issue.get('issue_header', '').lower() 
+                              for word in ['critical', 'error', 'bug', 'security', 'fail'])]
+        
+        if critical_issues:
+            return False, f"Critical issues detected: {', '.join([i.get('issue_header', '') for i in critical_issues])}", details
+
+        # Auto-approval criteria (must meet ALL)
+        criteria_checks = []
+        
+        # High confidence requirement
+        if confidence >= confidence_threshold:
+            criteria_checks.append("✅ High confidence")
+        else:
+            return False, f"Low confidence score ({confidence}/{confidence_threshold})", details
+            
+        # Low complexity requirement  
+        if complexity <= complexity_threshold:
+            criteria_checks.append("✅ Low complexity")
+        else:
+            return False, f"High complexity score ({complexity}/{complexity_threshold})", details
+            
+        # High security requirement
+        if security >= security_threshold:
+            criteria_checks.append("✅ High security")
+        else:
+            return False, f"Low security score ({security}/{security_threshold})", details
+            
+        # Low effort requirement
+        if effort <= effort_threshold:
+            criteria_checks.append("✅ Low effort")
+        else:
+            return False, f"High effort score ({effort}/{effort_threshold})", details
+            
+        # Size requirements
+        if total_lines <= max_lines:
+            criteria_checks.append("✅ Small change")
+        else:
+            return False, f"Large change ({total_lines}/{max_lines} lines)", details
+            
+        if pr_files <= max_files:
+            criteria_checks.append("✅ Few files")
+        else:
+            return False, f"Many files ({pr_files}/{max_files})", details
+            
+        # AI recommendation bonus (not required but helpful)
+        if ai_recommends:
+            criteria_checks.append("✅ AI recommends approval")
+            
+        # All criteria met!
+        criteria_summary = "\n".join(criteria_checks)
+        reason = f"All auto-approval criteria met ({len(criteria_checks)} checks passed)"
+        
+        return True, reason, details + f"\n\n**Criteria Met**:\n{criteria_summary}"
+
+    def _safe_extract_score(self, value, min_val, max_val, default):
+        """Safely extract and validate a numeric score"""
+        try:
+            if isinstance(value, (int, float)):
+                score = int(value)
+            elif isinstance(value, str):
+                # Try to extract number from string
+                import re
+                match = re.search(r'\d+', value)
+                if match:
+                    score = int(match.group())
+                else:
+                    return default
+            else:
+                return default
+                
+            # Clamp to valid range
+            return max(min_val, min(max_val, score))
+        except (ValueError, TypeError):
+            return default

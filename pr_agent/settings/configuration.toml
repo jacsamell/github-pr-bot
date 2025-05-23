@@ -64,6 +64,15 @@ reasoning_effort = "medium" # "low", "medium", "high"
 enable_auto_approval=false # Set to true to enable auto-approval of PRs under certain conditions
 auto_approve_for_low_review_effort=-1 # -1 to disable, [1-5] to set the threshold for auto-approval
 auto_approve_for_no_suggestions=false # If true, the PR will be auto-approved if there are no suggestions
+
+# Custom auto-approval thresholds
+auto_approve_confidence_threshold=85 # Minimum confidence score (1-100) required for auto-approval
+auto_approve_complexity_threshold=5 # Maximum complexity score (1-10) allowed for auto-approval  
+auto_approve_security_threshold=8 # Minimum security score (1-10) required for auto-approval
+auto_approve_effort_threshold=3 # Maximum effort score (1-5) allowed for auto-approval
+auto_approve_max_files=5 # Maximum number of files changed allowed for auto-approval
+auto_approve_max_lines=200 # Maximum total lines changed allowed for auto-approval
+auto_approve_max_issues=3 # Maximum number of issues allowed for auto-approval
 # extended thinking for Claude reasoning models
 enable_claude_extended_thinking = false # Set to true to enable extended thinking feature
 extended_thinking_budget_tokens = 2048
