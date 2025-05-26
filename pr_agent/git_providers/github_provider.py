@@ -352,7 +352,7 @@ class GithubProvider(GitProvider):
                                artifact={"traceback": traceback.format_exc()})
             raise RateLimitExceeded("Rate limit exceeded for GitHub API.") from e
 
-    def publish_description(self, pr_title: str, pr_body: str):
+    def _publish_description_impl(self, pr_title: str, pr_body: str):
         self.pr.edit(title=pr_title, body=pr_body)
 
     def get_latest_commit_url(self) -> str:
@@ -368,7 +368,7 @@ class GithubProvider(GitProvider):
                                    final_update_message=True):
         self.publish_persistent_comment_full(pr_comment, initial_header, update_header, name, final_update_message)
 
-    def publish_comment(self, pr_comment: str, is_temporary: bool = False):
+    def _publish_comment_impl(self, pr_comment: str, is_temporary: bool = False):
         if not self.pr and not self.issue_main:
             get_logger().error("Cannot publish a comment if missing PR/Issue context")
             return None
@@ -391,10 +391,9 @@ class GithubProvider(GitProvider):
         self.pr.comments_list.append(response)
         return response
 
-    def publish_inline_comment(self, body: str, relevant_file: str, relevant_line_in_file: str, original_suggestion=None):
+    def _publish_inline_comment_impl(self, body: str, relevant_file: str, relevant_line_in_file: str, original_suggestion=None):
         body = self.limit_output_characters(body, self.max_comment_chars)
         self.publish_inline_comments([self.create_inline_comment(body, relevant_file, relevant_line_in_file)])
-
 
     def create_inline_comment(self, body: str, relevant_file: str, relevant_line_in_file: str,
                               absolute_position: int = None):
@@ -411,7 +410,7 @@ class GithubProvider(GitProvider):
         path = relevant_file.strip()
         return dict(body=body, path=path, position=position) if subject_type == "LINE" else {}
 
-    def publish_inline_comments(self, comments: list[dict], disable_fallback: bool = False):
+    def _publish_inline_comments_impl(self, comments: list[dict], disable_fallback: bool = False):
         try:
             # publish all comments in a single message
             self.pr.create_review(commit=self.last_commit_id, comments=comments)
@@ -427,8 +426,8 @@ class GithubProvider(GitProvider):
                 self._publish_inline_comments_fallback_with_verification(comments)
             except Exception as e:
                 get_logger().error(f"Failed to publish inline code comments fallback, error: {e}")
-                raise e    
-    
+                raise e
+
     def get_review_thread_comments(self, comment_id: int) -> list[dict]:
         """
         Retrieves all comments in the same thread as the given comment.
@@ -548,7 +547,7 @@ class GithubProvider(GitProvider):
                 get_logger().error(f"Failed to fix inline comment, error: {e}")
         return fixed_comments
 
-    def publish_code_suggestions(self, code_suggestions: list) -> bool:
+    def _publish_code_suggestions_impl(self, code_suggestions: list) -> bool:
         """
         Publishes code suggestions as comments on the PR.
         """
@@ -894,7 +893,7 @@ class GithubProvider(GitProvider):
     def _get_pr_file_content(self, file: FilePatchInfo, sha: str) -> str:
         return self.get_pr_file_content(file.filename, sha)
 
-    def publish_labels(self, pr_types):
+    def _publish_labels_impl(self, pr_types):
         try:
             label_color_map = {"Bug fix": "1d76db", "Tests": "e99695", "Bug fix with tests": "c5def5",
                                "Enhancement": "bfd4f2", "Documentation": "d4c5f9",
@@ -1093,12 +1092,38 @@ class GithubProvider(GitProvider):
 
     def auto_approve(self) -> bool:
         try:
+            get_logger().info(f"Attempting to auto-approve PR #{self.pr_num} in {self.repo}")
+            get_logger().debug(f"Using deployment type: {self.deployment_type}")
+            get_logger().debug(f"PR state: {self.pr.state}, mergeable: {self.pr.mergeable}")
+            
+            # Check if we're trying to approve our own PR
+            current_user = self.get_user_id()
+            pr_author = self.pr.user.login
+            get_logger().debug(f"Current user: {current_user}, PR author: {pr_author}")
+            
+            if current_user == pr_author:
+                get_logger().warning(f"Cannot approve own PR - current user ({current_user}) is the PR author")
+                return False
+            
             res = self.pr.create_review(event="APPROVE")
+            get_logger().info(f"Review created successfully: id={res.id}, state={res.state}")
+            
             if res.state == "APPROVED":
+                get_logger().info("PR successfully approved!")
                 return True
-            return False
+            else:
+                get_logger().warning(f"Review created but state is not APPROVED: {res.state}")
+                return False
+        except GithubException as e:
+            if e.status == 422 and "Can not approve your own pull request" in str(e.data.get('errors', [])):
+                get_logger().warning(f"Cannot approve own PR: {e.data.get('errors')}")
+                return False
+            else:
+                get_logger().exception(f"GitHub API error auto-approving PR #{self.pr_num}: {e.status} - {e.data}")
+                return False
         except Exception as e:
-            get_logger().exception(f"Failed to auto-approve, error: {e}")
+            get_logger().exception(f"Failed to auto-approve PR #{self.pr_num}: {type(e).__name__}: {str(e)}")
+            get_logger().debug(f"Full exception details: {e}")
             return False
 
     def calc_pr_statistics(self, pull_request_data: dict):

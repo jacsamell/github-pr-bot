@@ -98,12 +98,37 @@ class GitProvider(ABC):
         pass
 
     @abstractmethod
-    def publish_description(self, pr_title: str, pr_body: str):
+    def _publish_description_impl(self, pr_title: str, pr_body: str):
+        """Internal implementation for publishing PR description - must be implemented by subclasses"""
         pass
 
+    def publish_description(self, pr_title: str, pr_body: str):
+        """Public method that handles dry_run mode"""
+        if get_settings().get("config.dry_run", False):
+            get_logger().info(f"\n{'='*80}\n🔍 DRY RUN - PR DESCRIPTION UPDATE:\n{'='*80}\nTitle: {pr_title}\n\nBody:\n{pr_body}\n{'='*80}\n")
+            return
+        return self._publish_description_impl(pr_title, pr_body)
+
     @abstractmethod
-    def publish_code_suggestions(self, code_suggestions: list) -> bool:
+    def _publish_code_suggestions_impl(self, code_suggestions: list) -> bool:
+        """Internal implementation for publishing code suggestions - must be implemented by subclasses"""
         pass
+
+    def publish_code_suggestions(self, code_suggestions: list) -> bool:
+        """Public method that handles dry_run mode"""
+        if get_settings().get("config.dry_run", False):
+            get_logger().info(f"\n{'='*80}\n🔍 DRY RUN - CODE SUGGESTIONS ({len(code_suggestions)} total):\n{'='*80}")
+            for i, suggestion in enumerate(code_suggestions, 1):
+                get_logger().info(f"\nSuggestion {i}:")
+                if 'relevant_file' in suggestion:
+                    get_logger().info(f"  File: {suggestion['relevant_file']}")
+                if 'relevant_lines_start' in suggestion:
+                    get_logger().info(f"  Lines: {suggestion.get('relevant_lines_start', '?')} - {suggestion.get('relevant_lines_end', '?')}")
+                if 'body' in suggestion:
+                    get_logger().info(f"  Body:\n{suggestion['body']}")
+            get_logger().info(f"{'='*80}\n")
+            return True
+        return self._publish_code_suggestions_impl(code_suggestions)
 
     @abstractmethod
     def get_languages(self):
@@ -220,8 +245,17 @@ class GitProvider(ABC):
 
     #### comments operations ####
     @abstractmethod
-    def publish_comment(self, pr_comment: str, is_temporary: bool = False):
+    def _publish_comment_impl(self, pr_comment: str, is_temporary: bool = False):
+        """Internal implementation for publishing comments - must be implemented by subclasses"""
         pass
+
+    def publish_comment(self, pr_comment: str, is_temporary: bool = False):
+        """Public method that handles dry_run mode"""
+        if get_settings().get("config.dry_run", False):
+            comment_type = "TEMPORARY COMMENT" if is_temporary else "COMMENT"
+            get_logger().info(f"\n{'='*80}\n🔍 DRY RUN - {comment_type}:\n{'='*80}\n{pr_comment}\n{'='*80}\n")
+            return None
+        return self._publish_comment_impl(pr_comment, is_temporary)
 
     def publish_persistent_comment(self, pr_comment: str,
                                    initial_header: str,
@@ -238,7 +272,9 @@ class GitProvider(ABC):
         try:
             prev_comments = list(self.get_issue_comments())
             for comment in prev_comments:
-                if comment.body.startswith(initial_header):
+                # Check if comment starts with the header OR contains the header (for previously updated comments)
+                comment_body = comment.body.strip()
+                if comment_body.startswith(initial_header) or (initial_header in comment_body and f"#### ({name.capitalize()} updated until commit" in comment_body):
                     latest_commit_url = self.get_latest_commit_url()
                     comment_url = self.get_comment_url(comment)
                     if update_header:
@@ -259,16 +295,43 @@ class GitProvider(ABC):
         return self.publish_comment(pr_comment)
 
     @abstractmethod
-    def publish_inline_comment(self, body: str, relevant_file: str, relevant_line_in_file: str, original_suggestion=None):
+    def _publish_inline_comment_impl(self, body: str, relevant_file: str, relevant_line_in_file: str, original_suggestion=None):
+        """Internal implementation for publishing inline comments - must be implemented by subclasses"""
         pass
+
+    def publish_inline_comment(self, body: str, relevant_file: str, relevant_line_in_file: str, original_suggestion=None):
+        """Public method that handles dry_run mode"""
+        if get_settings().get("config.dry_run", False):
+            get_logger().info(f"\n{'='*80}\n🔍 DRY RUN - INLINE COMMENT:\nFile: {relevant_file}\nLine: {relevant_line_in_file}\n{'='*80}\n{body}\n{'='*80}\n")
+            return
+        return self._publish_inline_comment_impl(body, relevant_file, relevant_line_in_file, original_suggestion)
 
     def create_inline_comment(self, body: str, relevant_file: str, relevant_line_in_file: str,
                               absolute_position: int = None):
         raise NotImplementedError("This git provider does not support creating inline comments yet")
 
     @abstractmethod
-    def publish_inline_comments(self, comments: list[dict]):
+    def _publish_inline_comments_impl(self, comments: list[dict]):
+        """Internal implementation for publishing multiple inline comments - must be implemented by subclasses"""
         pass
+
+    def publish_inline_comments(self, comments: list[dict]):
+        """Public method that handles dry_run mode"""
+        if get_settings().get("config.dry_run", False):
+            get_logger().info(f"\n{'='*80}\n🔍 DRY RUN - INLINE COMMENTS ({len(comments)} total):\n{'='*80}")
+            for i, comment in enumerate(comments, 1):
+                get_logger().info(f"\nComment {i}:")
+                if 'path' in comment:
+                    get_logger().info(f"  File: {comment['path']}")
+                if 'position' in comment:
+                    get_logger().info(f"  Position: {comment['position']}")
+                if 'line' in comment:
+                    get_logger().info(f"  Line: {comment['line']}")
+                if 'body' in comment:
+                    get_logger().info(f"  Body:\n{comment['body']}")
+            get_logger().info(f"{'='*80}\n")
+            return
+        return self._publish_inline_comments_impl(comments)
 
     @abstractmethod
     def remove_initial_comment(self):
@@ -290,8 +353,16 @@ class GitProvider(ABC):
 
     #### labels operations ####
     @abstractmethod
-    def publish_labels(self, labels):
+    def _publish_labels_impl(self, labels):
+        """Internal implementation for publishing labels - must be implemented by subclasses"""
         pass
+
+    def publish_labels(self, labels):
+        """Public method that handles dry_run mode"""
+        if get_settings().get("config.dry_run", False):
+            get_logger().info(f"\n{'='*80}\n🔍 DRY RUN - LABELS:\n{'='*80}\n{', '.join(labels)}\n{'='*80}\n")
+            return
+        return self._publish_labels_impl(labels)
 
     @abstractmethod
     def get_pr_labels(self, update=False):

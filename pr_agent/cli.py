@@ -76,6 +76,13 @@ def run(inargs=None, args=None):
 
     command = args.command.lower()
     get_settings().set("CONFIG.CLI_MODE", True)
+    
+    # Check if dry_run mode is enabled
+    if get_settings().get("config.dry_run", False):
+        get_logger().info("\n" + "="*80)
+        get_logger().info("🔍 DRY RUN MODE ENABLED")
+        get_logger().info("All comments will be printed to console instead of being posted to GitHub")
+        get_logger().info("="*80 + "\n")
 
     async def inner():
         if args.issue_url:

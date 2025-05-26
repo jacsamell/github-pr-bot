@@ -1,0 +1,36 @@
+name: Smart PR Review
+
+on:
+  # Trigger on PR events
+  pull_request:
+    types: [opened, synchronize, reopened]
+  
+  # Allow manual triggers via comments
+  issue_comment:
+    types: [created]
+
+jobs:
+  # Auto-review on PR changes
+  auto-review:
+    if: github.event_name == 'pull_request'
+    uses: YOUR_ORG/pr-agent-workflows/.github/workflows/pr-agent-reusable.yml@main
+    with:
+      auto_approve: true
+      enable_custom_labels: true
+    secrets:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+  # Handle comment commands
+  comment-command:
+    if: |
+      github.event_name == 'issue_comment' && 
+      github.event.issue.pull_request &&
+      (contains(github.event.comment.body, '/review') || 
+       contains(github.event.comment.body, '/describe') ||
+       contains(github.event.comment.body, '/improve'))
+    uses: YOUR_ORG/pr-agent-workflows/.github/workflows/pr-agent-reusable.yml@main
+    with:
+      pr_url: ${{ github.event.issue.pull_request.url }}
+      auto_approve: ${{ contains(github.event.comment.body, 'auto_approve') }}
+    secrets:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }} 

@@ -1,0 +1,24 @@
+name: PR Agent
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, synchronize]
+
+jobs:
+  pr-agent:
+    runs-on: ubuntu-latest
+    if: ${{ !github.event.pull_request.draft }}
+    
+    steps:
+    - name: PR Agent
+      uses: docker://jacsamell/pr-agent:latest
+      env:
+        OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Configuration
+        CONFIG.MODEL: "anthropic/claude-sonnet-4-20250514"
+        CONFIG.ENABLE_AUTO_APPROVAL: "true"
+        CONFIG.MAX_MODEL_TOKENS: "100000"
+        PR_REVIEWER.PERSISTENT_COMMENT: "true"
+        PR_REVIEWER.NUM_MAX_FINDINGS: "5"
+        PR_DESCRIPTION.FINAL_UPDATE_MESSAGE: "false" 

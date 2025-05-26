@@ -90,6 +90,18 @@ async def run_action():
         if action in pr_actions:
             pr_url = event_payload.get("pull_request", {}).get("url")
             if pr_url:
+                # Check if we should require ##aidesc trigger
+                require_aidesc_trigger = get_setting_or_env("GITHUB_ACTION_CONFIG.REQUIRE_AIDESC_TRIGGER", False)
+                if is_true(require_aidesc_trigger):
+                    pr_body = event_payload.get("pull_request", {}).get("body", "")
+                    if pr_body is None:
+                        pr_body = ""
+                    if "##aidesc" not in pr_body.lower():
+                        get_logger().info("Skipping PR-Agent actions: ##aidesc trigger not found in PR description")
+                        return
+                    else:
+                        get_logger().info("##aidesc trigger found in PR description, proceeding with PR-Agent actions")
+                
                 # legacy - supporting both GITHUB_ACTION and GITHUB_ACTION_CONFIG
                 auto_review = get_setting_or_env("GITHUB_ACTION.AUTO_REVIEW", None)
                 if auto_review is None:

@@ -216,6 +216,38 @@ The following diagram illustrates PR-Agent tools and their flow:
 
 Check out the [PR Compression strategy](https://qodo-merge-docs.qodo.ai/core-abilities/#pr-compression-strategy) page for more details on how we convert a code diff to a manageable LLM prompt
 
+## Dry-Run Mode (Local Testing)
+
+PR-Agent now supports a **dry-run mode** that allows you to test the tool locally without making any changes to your GitHub repository. When enabled, all comments and suggestions are printed to the console instead of being posted to GitHub.
+
+### How to use dry-run mode
+
+There are several ways to enable dry-run mode:
+
+**1. Via configuration file:**
+```toml
+[config]
+dry_run = true
+```
+
+**2. Via command line:**
+```bash
+python -m pr_agent.cli --pr_url=https://github.com/owner/repo/pull/123 review --config.dry_run=true
+```
+
+**3. Via environment variable:**
+```bash
+export CONFIG.DRY_RUN=true
+python -m pr_agent.cli --pr_url=https://github.com/owner/repo/pull/123 review
+```
+
+**4. Using the example script:**
+```bash
+python run_dry_mode.py --pr_url=https://github.com/owner/repo/pull/123 review
+```
+
+When dry-run mode is enabled, you'll see all the comments that would normally be posted to GitHub printed to your console with clear formatting.
+
 ## Why use PR-Agent?
 
 A reasonable question that can be asked is: `"Why use PR-Agent? What makes it stand out from existing tools?"`
@@ -238,9 +270,9 @@ https://openai.com/enterprise-privacy
 
 - When using Qodo Merge 💎, hosted by Qodo, we will not store any of your data, nor will we use it for training. You will also benefit from an OpenAI account with zero data retention.
 
-- For certain clients, Qodo-hosted Qodo Merge will use Qodo’s proprietary models — if this is the case, you will be notified.
+- For certain clients, Qodo-hosted Qodo Merge will use Qodo's proprietary models — if this is the case, you will be notified.
 
-- No passive collection of Code and Pull Requests’ data — Qodo Merge will be active only when you invoke it, and it will then extract and analyze only data relevant to the executed command and queried pull request.
+- No passive collection of Code and Pull Requests' data — Qodo Merge will be active only when you invoke it, and it will then extract and analyze only data relevant to the executed command and queried pull request.
 
 ### Qodo Merge Chrome extension
 

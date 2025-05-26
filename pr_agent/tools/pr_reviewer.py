@@ -178,11 +178,32 @@ class PRReviewer:
             get_logger().error(f"Failed to review PR: {e}")
 
     async def _prepare_prediction(self, model: str) -> None:
-        self.patches_diff = get_pr_diff(self.git_provider,
-                                        self.token_handler,
-                                        model,
-                                        add_line_numbers_to_hunks=True,
-                                        disable_extra_lines=False,)
+        # Check if we're in auto-approval mode to track pruning
+        is_auto_approve = isinstance(self.args, list) and self.args and self.args[0] == 'auto_approve'
+        
+        if is_auto_approve:
+            # For auto-approval, track if pruning occurred
+            result = get_pr_diff(self.git_provider,
+                               self.token_handler,
+                               model,
+                               add_line_numbers_to_hunks=True,
+                               disable_extra_lines=False,
+                               return_pruning_info=True)
+            if isinstance(result, tuple):
+                self.patches_diff, self.diff_was_pruned = result
+                if self.diff_was_pruned:
+                    get_logger().warning(f"PR diff was pruned due to size - auto-approval will be blocked for safety")
+            else:
+                self.patches_diff = result
+                self.diff_was_pruned = False
+        else:
+            # Normal review mode
+            self.patches_diff = get_pr_diff(self.git_provider,
+                                          self.token_handler,
+                                          model,
+                                          add_line_numbers_to_hunks=True,
+                                          disable_extra_lines=False,)
+            self.diff_was_pruned = False
 
         if self.patches_diff:
             get_logger().debug(f"PR diff", diff=self.patches_diff)
@@ -225,9 +246,10 @@ class PRReviewer:
         first_key = 'review'
         last_key = 'security_concerns'
         data = load_yaml(self.prediction.strip(),
-                         keys_fix_yaml=["ticket_compliance_check", "estimated_effort_to_review_[1-5]:", "security_concerns:", "key_issues_to_review:",
+                         keys_fix_yaml=["ticket_compliance_check", "estimated_effort_to_review_[1-5]:", "security_concerns:", "key_issues_to_review:", "code_suggestions:",
                                         "confidence_score_[1-100]:", "complexity_score_[1-10]:", "security_score_[1-10]:", "auto_approve_recommendation:",
-                                        "relevant_file:", "relevant_line:", "suggestion:"],
+                                        "auto_approve_reasoning:", "requires_human_approval:", "relevant_file:", "relevant_line:", "suggestion:", "suggestion_header:",
+                                        "suggestion_content:", "existing_code:", "improved_code:"],
                          first_key=first_key, last_key=last_key)
         github_action_output(data, 'review')
 
@@ -363,38 +385,64 @@ class PRReviewer:
         if not get_settings().pr_reviewer.require_security_review:
             get_settings().pr_reviewer.enable_review_labels_security = False # we did not generate this output
 
-        if (get_settings().pr_reviewer.enable_review_labels_security or
-                get_settings().pr_reviewer.enable_review_labels_effort):
-            try:
-                review_labels = []
-                if get_settings().pr_reviewer.enable_review_labels_effort:
-                    estimated_effort = data['review']['estimated_effort_to_review_[1-5]']
-                    estimated_effort_number = 0
-                    if isinstance(estimated_effort, str):
-                        try:
-                            estimated_effort_number = int(estimated_effort.split(',')[0])
-                        except ValueError:
-                            get_logger().warning(f"Invalid estimated_effort value: {estimated_effort}")
-                    elif isinstance(estimated_effort, int):
-                        estimated_effort_number = estimated_effort
-                    else:
-                        get_logger().warning(f"Unexpected type for estimated_effort: {type(estimated_effort)}")
-                    if 1 <= estimated_effort_number <= 5:  # 1, because ...
-                        review_labels.append(f'Review effort {estimated_effort_number}/5')
-                if get_settings().pr_reviewer.enable_review_labels_security and get_settings().pr_reviewer.require_security_review:
-                    security_concerns = data['review']['security_concerns']  # yes, because ...
-                    security_concerns_bool = 'yes' in security_concerns.lower() or 'true' in security_concerns.lower()
-                    if security_concerns_bool:
-                        review_labels.append('Possible security concern')
+        # Always try to set labels (including human approval) if any labeling is enabled
+        try:
+            review_labels = []
+            
+            # Add effort labels if enabled
+            if get_settings().pr_reviewer.enable_review_labels_effort:
+                estimated_effort = data['review']['estimated_effort_to_review_[1-5]']
+                estimated_effort_number = 0
+                if isinstance(estimated_effort, str):
+                    try:
+                        estimated_effort_number = int(estimated_effort.split(',')[0])
+                    except ValueError:
+                        get_logger().warning(f"Invalid estimated_effort value: {estimated_effort}")
+                elif isinstance(estimated_effort, int):
+                    estimated_effort_number = estimated_effort
+                else:
+                    get_logger().warning(f"Unexpected type for estimated_effort: {type(estimated_effort)}")
+                if 1 <= estimated_effort_number <= 5:  # 1, because ...
+                    review_labels.append(f'Review effort {estimated_effort_number}/5')
+            
+            # Add security labels if enabled
+            if get_settings().pr_reviewer.enable_review_labels_security and get_settings().pr_reviewer.require_security_review:
+                security_concerns = data['review']['security_concerns']  # yes, because ...
+                security_concerns_bool = 'yes' in security_concerns.lower() or 'true' in security_concerns.lower()
+                if security_concerns_bool:
+                    review_labels.append('Possible security concern')
+            
+            # Always add human approval requirement label if present (independent of other label settings)
+            human_approval_tag = data['review'].get('requires_human_approval', '')
+            ai_recommends = data['review'].get('auto_approve_recommendation', False)
+            
+            # Convert string boolean if needed
+            if isinstance(ai_recommends, str):
+                ai_recommends = ai_recommends.lower() in ['true', 'yes', '1']
+            
+            get_logger().debug(f"Human approval tag from AI: '{human_approval_tag}', AI recommends: {ai_recommends}")
+            
+            if human_approval_tag and human_approval_tag.strip():
+                get_logger().info(f"Adding 'Human Review Required' label due to: {human_approval_tag}")
+                review_labels.append('Human Review Required')
+            elif ai_recommends:
+                get_logger().info(f"Adding 'AI Approved' label - AI recommends approval")
+                review_labels.append('AI Approved')
+            else:
+                get_logger().debug("No human approval tag found and AI doesn't recommend approval")
 
+            # Always proceed with label management if we have any labels to set (including human approval)
+            if review_labels or get_settings().pr_reviewer.enable_review_labels_security or get_settings().pr_reviewer.enable_review_labels_effort:
                 current_labels = self.git_provider.get_pr_labels(update=True)
                 if not current_labels:
                     current_labels = []
                 get_logger().debug(f"Current labels:\n{current_labels}")
                 if current_labels:
                     current_labels_filtered = [label for label in current_labels if
-                                               not label.lower().startswith('review effort') and not label.lower().startswith(
-                                                   'possible security concern')]
+                                               not label.lower().startswith('review effort') and 
+                                               not label.lower().startswith('possible security concern') and
+                                               label.lower() != 'human review required' and
+                                               label.lower() != 'ai approved']
                 else:
                     current_labels_filtered = []
                 new_labels = review_labels + current_labels_filtered
@@ -403,8 +451,8 @@ class PRReviewer:
                     self.git_provider.publish_labels(new_labels)
                 else:
                     get_logger().info(f"Review labels are already set:\n{review_labels + current_labels_filtered}")
-            except Exception as e:
-                get_logger().error(f"Failed to set review labels, error: {e}")
+        except Exception as e:
+            get_logger().error(f"Failed to set review labels, error: {e}")
 
     async def auto_approve_logic(self):
         """
@@ -429,24 +477,65 @@ class PRReviewer:
                 get_logger().info("Failed to parse review data for auto-approval")
                 return
 
+            # Generate the full review using the same format as regular review
+            pr_review = self._prepare_pr_review()
+            
             # Make the auto-approval decision
             should_approve, reason, details = self._evaluate_auto_approval(review_data)
-
+            
+            # Add auto-approval decision to the review
             if should_approve:
+                get_logger().info(f"Auto-approval decision: YES - {reason}")
+                get_logger().debug(f"Calling git_provider.auto_approve() for PR: {self.pr_url}")
+                
                 is_auto_approved = self.git_provider.auto_approve()
+                
+                get_logger().debug(f"git_provider.auto_approve() returned: {is_auto_approved}")
+                
                 if is_auto_approved:
                     get_logger().info(f"Auto-approved PR: {reason}")
-                    self.git_provider.publish_comment(f"🤖 **Auto-approved PR**\n\n**Reason**: {reason}\n\n**Analysis Details**:\n{details}\n\n_This PR meets all auto-approval criteria._")
+                    auto_approval_section = f"\n\n---\n\n🤖 **Auto-approved PR**\n\n**Reason**: {reason}\n\n_This PR meets all auto-approval criteria._"
                 else:
-                    get_logger().warning("Failed to auto-approve PR via git provider")
-                    self.git_provider.publish_comment(f"⚠️ **Auto-approval recommended but failed**\n\n**Reason**: {reason}\n\n**Analysis Details**:\n{details}")
+                    # Check if it's a self-approval issue
+                    current_user = self.git_provider.get_user_id()
+                    pr_author = self.git_provider.pr.user.login
+                    if current_user == pr_author:
+                        get_logger().warning("Cannot auto-approve: PR author cannot approve their own PR")
+                        auto_approval_section = f"\n\n---\n\n🚫 **Auto-approval blocked: Self-approval restriction**\n\n" \
+                                              f"GitHub does not allow PR authors to approve their own pull requests.\n\n" \
+                                              f"**AI Analysis**: The PR meets all auto-approval criteria\n" \
+                                              f"**Reason**: {reason}\n\n" \
+                                              f"_ℹ️ Another reviewer with approval permissions needs to approve this PR._"
+                    else:
+                        get_logger().warning("Failed to auto-approve PR via git provider")
+                        auto_approval_section = f"\n\n---\n\n⚠️ **Auto-approval recommended but failed**\n\n" \
+                                              f"The AI recommends approval, but the auto-approval action failed.\n\n" \
+                                              f"**Reason**: {reason}\n\n" \
+                                              f"_Please check bot permissions or manually approve if appropriate._"
             else:
-                get_logger().info(f"Auto-approval declined: {reason}")
-                self.git_provider.publish_comment(f"🔍 **Manual review required**\n\n**Reason**: {reason}\n\n**Analysis Details**:\n{details}")
+                get_logger().info(f"Auto-approval decision: NO - {reason}")
+                auto_approval_section = f"\n\n---\n\n🔍 **Manual review required**\n\n**Reason**: {reason}"
+            
+            # Combine the full review with the auto-approval decision
+            comment_text = pr_review + auto_approval_section
+            
+            # Always use persistent comments for auto-approval (same as regular review)
+            get_logger().info("Using publish_persistent_comment for auto-approval")
+            self.git_provider.publish_persistent_comment(comment_text,
+                                                         initial_header=f"{PRReviewHeader.REGULAR.value} 🔍",
+                                                         update_header=True,
+                                                         final_update_message=False)
 
         except Exception as e:
             get_logger().error(f"Error in auto-approval logic: {e}")
-            self.git_provider.publish_comment("❌ **Auto-approval failed due to an error**. Manual review required.")
+            error_content = "❌ **Auto-approval failed due to an error**. Manual review required."
+            error_comment = f"{PRReviewHeader.REGULAR.value} 🔍\n\n{error_content}"
+            
+            # Always use persistent comments for auto-approval errors (same as regular review)
+            self.git_provider.publish_persistent_comment(error_comment,
+                                                         initial_header=f"{PRReviewHeader.REGULAR.value} 🔍",
+                                                         update_header=True,
+                                                         final_update_message=False)
 
     def _parse_review_data(self):
         """Parse the AI prediction to extract review data"""
@@ -454,9 +543,10 @@ class PRReviewer:
             first_key = 'review'
             last_key = 'security_concerns'
             data = load_yaml(self.prediction.strip(),
-                             keys_fix_yaml=["ticket_compliance_check", "estimated_effort_to_review_[1-5]:", "security_concerns:", "key_issues_to_review:",
+                             keys_fix_yaml=["ticket_compliance_check", "estimated_effort_to_review_[1-5]:", "security_concerns:", "key_issues_to_review:", "code_suggestions:",
                                             "confidence_score_[1-100]:", "complexity_score_[1-10]:", "security_score_[1-10]:", "auto_approve_recommendation:",
-                                            "relevant_file:", "relevant_line:", "suggestion:"],
+                                            "auto_approve_reasoning:", "requires_human_approval:", "relevant_file:", "relevant_line:", "suggestion:", "suggestion_header:",
+                                            "suggestion_content:", "existing_code:", "improved_code:"],
                              first_key=first_key, last_key=last_key)
             
             if 'review' not in data:
@@ -470,128 +560,99 @@ class PRReviewer:
 
     def _evaluate_auto_approval(self, review_data):
         """
-        Smart auto-approval logic based on AI analysis and PR metrics
+        Smart auto-approval logic based on AI recommendation
         Returns: (should_approve: bool, reason: str, details: str)
         """
-        # Get configurable thresholds
-        config = get_settings().config
-        confidence_threshold = getattr(config, 'auto_approve_confidence_threshold', 85)
-        complexity_threshold = getattr(config, 'auto_approve_complexity_threshold', 5)
-        security_threshold = getattr(config, 'auto_approve_security_threshold', 8)
-        effort_threshold = getattr(config, 'auto_approve_effort_threshold', 3)
-        max_files = getattr(config, 'auto_approve_max_files', 5)
-        max_lines = getattr(config, 'auto_approve_max_lines', 200)
-        max_issues = getattr(config, 'auto_approve_max_issues', 3)
-
-        # Extract AI scores (with safe defaults)
-        confidence = self._safe_extract_score(review_data.get('confidence_score_[1-100]'), 1, 100, 0)
-        complexity = self._safe_extract_score(review_data.get('complexity_score_[1-10]'), 1, 10, 10)
-        security = self._safe_extract_score(review_data.get('security_score_[1-10]'), 1, 10, 0)
-        effort = self._safe_extract_score(review_data.get('estimated_effort_to_review_[1-5]'), 1, 5, 5)
+        # Extract basic data
         ai_recommends = review_data.get('auto_approve_recommendation', False)
+        ai_reasoning = review_data.get('auto_approve_reasoning', 'No reasoning provided')
+        human_approval_tag = review_data.get('requires_human_approval', '')
         
         # Convert string boolean if needed
         if isinstance(ai_recommends, str):
             ai_recommends = ai_recommends.lower() in ['true', 'yes', '1']
-
-        # Extract other data
-        issues = review_data.get('key_issues_to_review', [])
-        security_concerns = review_data.get('security_concerns', '')
-        has_security_issues = security_concerns.lower() not in ['no', 'none', '']
-
+        
+        # Extract scores for reporting
+        confidence = self._safe_extract_score(review_data.get('confidence_score_[1-100]'), 1, 100, 0)
+        complexity = self._safe_extract_score(review_data.get('complexity_score_[1-10]'), 1, 10, 10)
+        security = self._safe_extract_score(review_data.get('security_score_[1-10]'), 1, 10, 0)
+        effort = self._safe_extract_score(review_data.get('estimated_effort_to_review_[1-5]'), 1, 5, 5)
+        
         # Get PR metrics
         pr_files = self.git_provider.get_num_of_files()
         pr_additions = getattr(self.git_provider.pr, 'additions', 0)
         pr_deletions = getattr(self.git_provider.pr, 'deletions', 0)
         total_lines = pr_additions + pr_deletions
-        author = getattr(self.git_provider.pr, 'user', {}).get('login', 'unknown')
+        
+        # Safely get author name
+        try:
+            author = self.git_provider.pr.user.login
+        except AttributeError:
+            author = 'unknown'
+        
+        # Extract issues and security concerns
+        issues = review_data.get('key_issues_to_review', [])
+        security_concerns = review_data.get('security_concerns', '')
+        has_security_issues = security_concerns.lower() not in ['no', 'none', '']
         
         # Build details string
         details = f"""
-- **Confidence Score**: {confidence}/100 (threshold: ≥{confidence_threshold})
-- **Complexity Score**: {complexity}/10 (threshold: ≤{complexity_threshold})
-- **Security Score**: {security}/10 (threshold: ≥{security_threshold})
-- **Effort Score**: {effort}/5 (threshold: ≤{effort_threshold})
-- **Files Changed**: {pr_files} (threshold: ≤{max_files})
-- **Lines Changed**: +{pr_additions}/-{pr_deletions} (total: {total_lines}, threshold: ≤{max_lines})
-- **Issues Found**: {len(issues)} (threshold: ≤{max_issues})
 - **AI Recommendation**: {ai_recommends}
+- **Confidence Score**: {confidence}/100
+- **Complexity Score**: {complexity}/10
+- **Security Score**: {security}/10
+- **Review Effort Score**: {effort}/5
+- **Files Changed**: {pr_files}
+- **Lines Changed**: +{pr_additions}/-{pr_deletions} (total: {total_lines})
 - **Author**: {author}
 """
-
-        # AUTO-APPROVAL DECISION LOGIC
         
-        # Check for immediate disqualifiers
-        if has_security_issues and security < security_threshold:
-            return False, f"Security concerns detected (score: {security}/{security_threshold})", details
-            
-        if len(issues) > max_issues:
-            return False, f"Too many issues found ({len(issues)}/{max_issues})", details
-            
-        if total_lines > max_lines:
-            return False, f"Large change size ({total_lines}/{max_lines} lines)", details
-            
-        if pr_files > max_files:
-            return False, f"Too many files changed ({pr_files}/{max_files})", details
-            
-        if effort > effort_threshold:
-            return False, f"High review effort required ({effort}/{effort_threshold})", details
-
-        # Check for critical issues
-        critical_issues = [issue for issue in issues if 
-                          any(word in issue.get('issue_header', '').lower() 
-                              for word in ['critical', 'error', 'bug', 'security', 'fail'])]
+        # Add human approval tag if present
+        if human_approval_tag and human_approval_tag.strip():
+            details += f"- **Requires Human Review**: {human_approval_tag}\n"
         
-        if critical_issues:
-            return False, f"Critical issues detected: {', '.join([i.get('issue_header', '') for i in critical_issues])}", details
+        # Add issues if any were found
+        if issues:
+            details += f"\n**Issues Found ({len(issues)}):**\n"
+            for issue in issues:
+                issue_header = issue.get('issue_header', 'Unknown')
+                issue_content = issue.get('issue_content', '')
+                details += f"  - {issue_header}: {issue_content}\n"
+        else:
+            details += "\n**Issues Found**: None\n"
 
-        # Auto-approval criteria (must meet ALL)
-        criteria_checks = []
+        # SIMPLIFIED AUTO-APPROVAL DECISION LOGIC
         
-        # High confidence requirement
-        if confidence >= confidence_threshold:
-            criteria_checks.append("✅ High confidence")
-        else:
-            return False, f"Low confidence score ({confidence}/{confidence_threshold})", details
-            
-        # Low complexity requirement  
-        if complexity <= complexity_threshold:
-            criteria_checks.append("✅ Low complexity")
-        else:
-            return False, f"High complexity score ({complexity}/{complexity_threshold})", details
-            
-        # High security requirement
-        if security >= security_threshold:
-            criteria_checks.append("✅ High security")
-        else:
-            return False, f"Low security score ({security}/{security_threshold})", details
-            
-        # Low effort requirement
-        if effort <= effort_threshold:
-            criteria_checks.append("✅ Low effort")
-        else:
-            return False, f"High effort score ({effort}/{effort_threshold})", details
-            
-        # Size requirements
-        if total_lines <= max_lines:
-            criteria_checks.append("✅ Small change")
-        else:
-            return False, f"Large change ({total_lines}/{max_lines} lines)", details
-            
-        if pr_files <= max_files:
-            criteria_checks.append("✅ Few files")
-        else:
-            return False, f"Many files ({pr_files}/{max_files})", details
-            
-        # AI recommendation bonus (not required but helpful)
+        # Check for force override (testing/development only)
+        force_approve_override = get_settings().config.get('auto_approve_force_override', False)
+        if force_approve_override:
+            reason = "FORCE APPROVAL ENABLED - Testing Mode"
+            warning = "\n\n**⚠️ WARNING**: Force override is enabled! This PR is being approved regardless of AI recommendation or safety checks!"
+            return True, reason, details + f"\n\n**AI Reasoning**: {ai_reasoning}" + warning + "\n\n**Decision**: ✅ FORCE APPROVED (Testing Mode)"
+        
+        # Safety check: If diff was pruned, require manual review
+        if hasattr(self, 'diff_was_pruned') and self.diff_was_pruned:
+            return False, "Diff was pruned due to size - incomplete analysis", details + "\n\n**⚠️ PRUNING DETECTED**: The PR diff was too large and had to be pruned, meaning the AI analysis is incomplete. Manual review is required for safety."
+        
+        # Safety check: Critical security issues always require manual review
+        if has_security_issues and security < 8:
+            return False, f"Security concerns detected with low score ({security}/10)", details
+        
+        # Safety check: Low confidence requires manual review
+        if confidence < 85:
+            return False, f"AI confidence too low ({confidence}/100)", details
+        
+        # Main decision: Trust the AI's recommendation
         if ai_recommends:
-            criteria_checks.append("✅ AI recommends approval")
-            
-        # All criteria met!
-        criteria_summary = "\n".join(criteria_checks)
-        reason = f"All auto-approval criteria met ({len(criteria_checks)} checks passed)"
-        
-        return True, reason, details + f"\n\n**Criteria Met**:\n{criteria_summary}"
+            reason = "AI recommends approval based on comprehensive analysis"
+            return True, reason, details + f"\n\n**AI Reasoning**: {ai_reasoning}\n\n**Decision**: ✅ Trusting AI recommendation for approval"
+        else:
+            # Use the human approval tag if available, otherwise use generic reason
+            if human_approval_tag and human_approval_tag.strip():
+                reason = f"Manual review required: {human_approval_tag}"
+            else:
+                reason = "AI does not recommend auto-approval"
+            return False, reason, details + f"\n\n**AI Reasoning**: {ai_reasoning}\n\n**Decision**: 🔍 AI recommends manual review"
 
     def _safe_extract_score(self, value, min_val, max_val, default):
         """Safely extract and validate a numeric score"""

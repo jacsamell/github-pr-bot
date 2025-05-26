@@ -1,6 +1,7 @@
 import copy
 import os
 import tempfile
+from pathlib import Path
 
 from dynaconf import Dynaconf
 from starlette_context import context
@@ -13,6 +14,16 @@ from pr_agent.log import get_logger
 def apply_repo_settings(pr_url):
     os.environ["AUTO_CAST_FOR_DYNACONF"] = "false"
     git_provider = get_git_provider_with_context(pr_url)
+    
+    # First, try to load local .pr_agent.toml file if it exists
+    local_pr_agent_toml = Path(__file__).parent.parent.parent / ".pr_agent.toml"
+    if local_pr_agent_toml.exists():
+        try:
+            get_settings().load_file(str(local_pr_agent_toml))
+            get_logger().info(f"Loaded local .pr_agent.toml from {local_pr_agent_toml}")
+        except Exception as e:
+            get_logger().warning(f"Failed to load local .pr_agent.toml: {e}")
+    
     if get_settings().config.use_repo_settings_file:
         repo_settings_file = None
         try:
