@@ -13,9 +13,9 @@ echo "Username: $USERNAME"
 echo "Image: $IMAGE_NAME"
 echo "Tag: $TAG"
 
-# Build the image
-echo "📦 Building image..."
-docker build -f Dockerfile.github_action -t "$REGISTRY/$USERNAME/$IMAGE_NAME:$TAG" .
+# Build the image for linux/amd64 (GitHub Actions compatibility)
+echo "📦 Building image for linux/amd64..."
+docker build --platform linux/amd64 -f Dockerfile.github_action -t "$REGISTRY/$USERNAME/$IMAGE_NAME:$TAG" .
 
 # Login to registry (requires DOCKER_PASSWORD environment variable)
 if [ -n "$DOCKER_PASSWORD" ]; then
