@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: GitHub PR Bot Analysis
-      uses: jacsamell/github-pr-bot@v1.0.1
+      uses: jacsamell/github-pr-bot@v0.0.1
       with:
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
         github_token: ${{ github.token }}
