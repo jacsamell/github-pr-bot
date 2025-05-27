@@ -246,9 +246,9 @@ class PRReviewer:
         the feedback.
         """
         first_key = 'review'
-        last_key = 'security_concerns'
+        last_key = 'has_security_concerns'
         data = load_yaml(self.prediction.strip(),
-                         keys_fix_yaml=["ticket_compliance_check", "estimated_effort_to_review_[1-5]:", "security_concerns:", "key_issues_to_review:", "code_suggestions:",
+                         keys_fix_yaml=["ticket_compliance_check", "estimated_effort_to_review_[1-5]:", "has_security_concerns:", "key_issues_to_review:", "code_suggestions:",
                                         "confidence_score_[1-100]:", "complexity_score_[1-10]:", "security_score_[1-10]:", "auto_approve_recommendation:",
                                         "auto_approve_reasoning:", "requires_human_approval:", "relevant_file:", "relevant_line:", "suggestion:", "suggestion_header:",
                                         "suggestion_content:", "existing_code:", "improved_code:"],
@@ -409,29 +409,25 @@ class PRReviewer:
             
             # Add security labels if enabled
             if get_settings().pr_reviewer.enable_review_labels_security and get_settings().pr_reviewer.require_security_review:
-                security_concerns = data['review']['security_concerns']  # yes, because ...
-                security_concerns_bool = 'yes' in security_concerns.lower() or 'true' in security_concerns.lower()
-                if security_concerns_bool:
+                has_security_concerns = data['review'].get('has_security_concerns', False)  # true/false boolean
+                if has_security_concerns:
                     review_labels.append('Possible security concern')
             
             # Always add human approval requirement label if present (independent of other label settings)
+            # Use the same logic as actual auto-approval decision
+            should_approve, approval_reason, _ = self._evaluate_auto_approval(data['review'])
             human_approval_tag = data['review'].get('requires_human_approval', '')
-            ai_recommends = data['review'].get('auto_approve_recommendation', False)
             
-            # Convert string boolean if needed
-            if isinstance(ai_recommends, str):
-                ai_recommends = ai_recommends.lower() in ['true', 'yes', '1']
-            
-            get_logger().debug(f"Human approval tag from AI: '{human_approval_tag}', AI recommends: {ai_recommends}")
+            get_logger().debug(f"Label evaluation: should_approve={should_approve}, human_approval_tag='{human_approval_tag}'")
             
             if human_approval_tag and human_approval_tag.strip():
                 get_logger().info(f"Adding 'Human Review Required' label due to: {human_approval_tag}")
                 review_labels.append('Human Review Required')
-            elif ai_recommends:
-                get_logger().info(f"Adding 'AI Approved' label - AI recommends approval")
+            elif should_approve:
+                get_logger().info(f"Adding 'AI Approved' label - meets all auto-approval criteria")
                 review_labels.append('AI Approved')
             else:
-                get_logger().debug("No human approval tag found and AI doesn't recommend approval")
+                get_logger().debug(f"No approval label - reason: {approval_reason}")
 
             # Always proceed with label management if we have any labels to set (including human approval)
             if review_labels or get_settings().pr_reviewer.enable_review_labels_security or get_settings().pr_reviewer.enable_review_labels_effort:
@@ -543,9 +539,9 @@ class PRReviewer:
         """Parse the AI prediction to extract review data"""
         try:
             first_key = 'review'
-            last_key = 'security_concerns'
+            last_key = 'has_security_concerns'
             data = load_yaml(self.prediction.strip(),
-                             keys_fix_yaml=["ticket_compliance_check", "estimated_effort_to_review_[1-5]:", "security_concerns:", "key_issues_to_review:", "code_suggestions:",
+                             keys_fix_yaml=["ticket_compliance_check", "estimated_effort_to_review_[1-5]:", "has_security_concerns:", "key_issues_to_review:", "code_suggestions:",
                                             "confidence_score_[1-100]:", "complexity_score_[1-10]:", "security_score_[1-10]:", "auto_approve_recommendation:",
                                             "auto_approve_reasoning:", "requires_human_approval:", "relevant_file:", "relevant_line:", "suggestion:", "suggestion_header:",
                                             "suggestion_content:", "existing_code:", "improved_code:"],
@@ -570,9 +566,13 @@ class PRReviewer:
         ai_reasoning = review_data.get('auto_approve_reasoning', 'No reasoning provided')
         human_approval_tag = review_data.get('requires_human_approval', '')
         
+        # Debug logging to see what we actually parsed
+        get_logger().info(f"DEBUG: Raw ai_recommends value: {repr(ai_recommends)} (type: {type(ai_recommends)})")
+        get_logger().info(f"DEBUG: All review_data keys: {list(review_data.keys())}")
+        
         # Convert string boolean if needed
         if isinstance(ai_recommends, str):
-            ai_recommends = ai_recommends.lower() in ['true', 'yes', '1']
+            ai_recommends = ai_recommends.lower().strip() in ['true', 'yes', '1']
         
         # Extract scores for reporting
         confidence = self._safe_extract_score(review_data.get('confidence_score_[1-100]'), 1, 100, 0)
@@ -594,8 +594,8 @@ class PRReviewer:
         
         # Extract issues and security concerns
         issues = review_data.get('key_issues_to_review', [])
-        security_concerns = review_data.get('security_concerns', '')
-        has_security_issues = security_concerns.lower() not in ['no', 'none', '']
+        has_security_concerns = review_data.get('has_security_concerns', False)
+        has_security_issues = has_security_concerns
         
         # Build details string
         details = f"""

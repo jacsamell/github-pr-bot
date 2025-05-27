@@ -1,0 +1,63 @@
+# Example PR Bot Configuration File
+# Uncomment and modify the settings you want to override
+# This file takes highest priority over GitHub Action inputs and environment variables
+
+[config]
+# AI Model Configuration
+# model = "anthropic/claude-sonnet-4-20250514"
+# fallback_models = []
+# temperature = 0.2
+
+# General Settings
+# publish_output = true
+# verbosity_level = 0
+# dry_run = false
+
+# Auto-approval Settings
+# enable_auto_approval = true
+# auto_approve_force_override = false  # DANGER: Only for testing!
+
+[github_action_config]
+# GitHub Action Trigger Settings
+# require_aidesc_trigger = false  # Set to true to require ##prbot in PR description
+
+# Auto-run Tools (override GitHub Action inputs)
+# auto_describe = true   # Enable automatic PR description generation
+# auto_review = true     # Enable automatic PR review
+# auto_improve = true    # Enable automatic code suggestions
+
+# GitHub Action Output
+# enable_output = true
+
+[pr_reviewer]
+# Review Configuration
+# require_score_review = false
+# require_tests_review = true
+# require_estimate_effort_to_review = true
+# require_security_review = true
+# persistent_comment = true
+# num_max_findings = 5
+
+# Review Labels
+# enable_review_labels_security = false
+# enable_review_labels_effort = false
+
+[pr_description]
+# Description Configuration
+# publish_labels = false
+# add_original_user_description = true
+# generate_ai_title = false
+# use_bullet_points = true
+
+[pr_code_suggestions]
+# Code Suggestions Configuration
+# commitable_code_suggestions = false
+# focus_only_on_problems = true
+# persistent_comment = true
+# suggestions_score_threshold = 0
+
+[github]
+# GitHub Provider Settings
+# deployment_type = "user"  # or "app"
+# ratelimit_retries = 5
+# try_fix_invalid_inline_comments = true 
