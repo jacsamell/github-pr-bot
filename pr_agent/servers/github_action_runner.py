@@ -15,10 +15,15 @@ from typing import Union
 
 from pr_agent.config_loader import get_settings
 from pr_agent.git_providers.utils import apply_repo_settings
-from pr_agent.log import get_logger
+from pr_agent.log import LoggingFormat, get_logger, setup_logger
 from pr_agent.tools.pr_code_suggestions import PRCodeSuggestions
 from pr_agent.tools.pr_description import PRDescription
 from pr_agent.tools.pr_reviewer import PRReviewer
+
+# Set up logging format based on environment variable
+pretty_logs = os.getenv('GITHUB_ACTION_CONFIG.PRETTY_LOGS', 'true').lower() == 'true'
+log_format = LoggingFormat.CONSOLE if pretty_logs else LoggingFormat.JSON
+setup_logger(fmt=log_format, level=get_settings().get("CONFIG.LOG_LEVEL", "INFO"))
 
 
 def is_true(value: Union[str, bool]) -> bool:
@@ -74,23 +79,66 @@ async def handle_pull_request_event(event_payload: dict) -> None:
     get_settings().config.is_auto_command = True
     get_settings().pr_description.final_update_message = False
 
-    get_logger().info(f"Running GitHub PR Bot: describe={auto_describe}, review={auto_review}, improve={auto_improve}")
+    # Use emojis only if pretty logs are enabled
+    if pretty_logs:
+        get_logger().info(f"🤖 Running GitHub PR Bot: describe={auto_describe}, review={auto_review}, improve={auto_improve}")
+    else:
+        get_logger().info(f"Running GitHub PR Bot: describe={auto_describe}, review={auto_review}, improve={auto_improve}")
 
     # Run enabled tools
     try:
         if is_true(auto_describe):
+            if pretty_logs:
+                get_logger().info("📝 Generating PR description...")
+            else:
+                get_logger().info("Generating PR description...")
             await PRDescription(pr_url).run()
+            if pretty_logs:
+                get_logger().info("✅ PR description completed")
+            else:
+                get_logger().info("PR description completed")
+            
         if is_true(auto_review):
+            if pretty_logs:
+                get_logger().info("🔍 Reviewing PR...")
+            else:
+                get_logger().info("Reviewing PR...")
             await PRReviewer(pr_url).run()
+            if pretty_logs:
+                get_logger().info("✅ PR review completed")
+            else:
+                get_logger().info("PR review completed")
+            
         if is_true(auto_improve):
+            if pretty_logs:
+                get_logger().info("💡 Generating code suggestions...")
+            else:
+                get_logger().info("Generating code suggestions...")
             await PRCodeSuggestions(pr_url).run()
+            if pretty_logs:
+                get_logger().info("✅ Code suggestions completed")
+            else:
+                get_logger().info("Code suggestions completed")
+            
+        if pretty_logs:
+            get_logger().info("🎉 GitHub PR Bot analysis complete!")
+        else:
+            get_logger().info("GitHub PR Bot analysis complete!")
     except Exception as e:
-        get_logger().error(f"Error running GitHub PR Bot tools: {e}")
+        if pretty_logs:
+            get_logger().error(f"❌ Error running GitHub PR Bot tools: {e}")
+        else:
+            get_logger().error(f"Error running GitHub PR Bot tools: {e}")
         raise
 
 
 async def run_action():
     """Main entry point for GitHub PR Bot runner."""
+    if pretty_logs:
+        get_logger().info("🚀 Starting GitHub PR Bot...")
+    else:
+        get_logger().info("Starting GitHub PR Bot...")
+    
     # Validate required environment variables
     required_env_vars = {
         'GITHUB_EVENT_NAME': os.environ.get('GITHUB_EVENT_NAME'),
@@ -100,7 +148,10 @@ async def run_action():
     
     for var_name, var_value in required_env_vars.items():
         if not var_value:
-            get_logger().error(f"Required environment variable {var_name} not set")
+            if pretty_logs:
+                get_logger().error(f"❌ Required environment variable {var_name} not set")
+            else:
+                get_logger().error(f"Required environment variable {var_name} not set")
             return
 
     # Set up API keys if provided
@@ -121,29 +172,56 @@ async def run_action():
     try:
         with open(required_env_vars['GITHUB_EVENT_PATH'], 'r') as f:
             event_payload = json.load(f)
+        if pretty_logs:
+            get_logger().info("📄 Event payload loaded successfully")
+        else:
+            get_logger().info("Event payload loaded successfully")
     except (json.JSONDecodeError, FileNotFoundError) as e:
-        get_logger().error(f"Failed to load event payload: {e}")
+        if pretty_logs:
+            get_logger().error(f"❌ Failed to load event payload: {e}")
+        else:
+            get_logger().error(f"Failed to load event payload: {e}")
         return
 
     # Apply repository-specific settings
     try:
         pr_url = event_payload.get("pull_request", {}).get("html_url")
         if pr_url:
+            if pretty_logs:
+                get_logger().info(f"🔧 Applying repository settings for: {pr_url}")
+            else:
+                get_logger().info(f"Applying repository settings for: {pr_url}")
             apply_repo_settings(pr_url)
-            get_logger().info("Repository settings applied successfully")
+            if pretty_logs:
+                get_logger().info("✅ Repository settings applied successfully")
+            else:
+                get_logger().info("Repository settings applied successfully")
     except Exception as e:
-        get_logger().warning(f"Failed to apply repo settings: {e}")
+        if pretty_logs:
+            get_logger().warning(f"⚠️ Failed to apply repo settings: {e}")
+        else:
+            get_logger().warning(f"Failed to apply repo settings: {e}")
 
     # Handle pull request events only
     event_name = required_env_vars['GITHUB_EVENT_NAME']
     
     try:
         if event_name in ["pull_request", "pull_request_target"]:
+            if pretty_logs:
+                get_logger().info(f"🎯 Processing {event_name} event...")
+            else:
+                get_logger().info(f"Processing {event_name} event...")
             await handle_pull_request_event(event_payload)
         else:
-            get_logger().info(f"Unsupported event type: {event_name}")
+            if pretty_logs:
+                get_logger().info(f"ℹ️ Unsupported event type: {event_name}")
+            else:
+                get_logger().info(f"Unsupported event type: {event_name}")
     except Exception as e:
-        get_logger().error(f"Error processing {event_name} event: {e}")
+        if pretty_logs:
+            get_logger().error(f"❌ Error processing {event_name} event: {e}")
+        else:
+            get_logger().error(f"Error processing {event_name} event: {e}")
         raise
 
 

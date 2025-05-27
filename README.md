@@ -119,6 +119,29 @@ auto_describe = true
 auto_improve = true
 ```
 
+### GitHub Actions Configuration
+
+You can customize the workflow behavior by modifying the workflow inputs:
+
+```yaml
+jobs:
+  pr-bot:
+    uses: ./.github/workflows/pr-bot-reusable.yml
+    with:
+      auto_review: true
+      auto_describe: true
+      auto_improve: true
+      enable_auto_approval: true
+      max_findings: 8
+      pretty_logs: true  # Enable colorful emoji logs (default: true)
+    secrets:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
+**Logging Options:**
+- `pretty_logs: true` - Colorful console logs with emojis (🚀 🔍 ✅)
+- `pretty_logs: false` - Plain JSON logs for structured parsing
+
 ## Security & Privacy
 
 - Code is only sent to Claude when GitHub PR Bot is explicitly triggered

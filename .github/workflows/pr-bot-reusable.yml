@@ -33,6 +33,11 @@ on:
         required: false
         default: true
         type: boolean
+      pretty_logs:
+        description: 'Enable pretty console logs instead of JSON'
+        required: false
+        default: true
+        type: boolean
     secrets:
       ANTHROPIC_API_KEY:
         description: 'Anthropic API key for Claude access'
@@ -45,7 +50,7 @@ jobs:
     
     steps:
     - name: GitHub PR Bot Analysis
-      uses: docker://jacsamell/pr-agent:v1
+      uses: docker://jacsamell/github-pr-bot:latest
       env:
         # GitHub Action environment
         GITHUB_EVENT_NAME: ${{ github.event_name }}
@@ -69,3 +74,6 @@ jobs:
         GITHUB_ACTION_CONFIG.AUTO_DESCRIBE: ${{ inputs.auto_describe }}
         GITHUB_ACTION_CONFIG.AUTO_IMPROVE: ${{ inputs.auto_improve }}
         GITHUB_ACTION_CONFIG.ENABLE_OUTPUT: "true"
+        
+        # Logging Configuration
+        GITHUB_ACTION_CONFIG.PRETTY_LOGS: ${{ inputs.pretty_logs }}
