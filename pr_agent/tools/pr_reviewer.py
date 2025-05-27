@@ -568,8 +568,8 @@ class PRReviewer:
         human_approval_tag = review_data.get('requires_human_approval', '')
         
         # Debug logging to see what we actually parsed
-        get_logger().info(f"DEBUG: Raw ai_recommends value: {repr(ai_recommends)} (type: {type(ai_recommends)})")
-        get_logger().info(f"DEBUG: All review_data keys: {list(review_data.keys())}")
+        get_logger().debug(f"Raw ai_recommends value: {repr(ai_recommends)} (type: {type(ai_recommends)})")
+        get_logger().debug(f"All review_data keys: {list(review_data.keys())}")
         
         # Convert string boolean if needed
         if isinstance(ai_recommends, str):

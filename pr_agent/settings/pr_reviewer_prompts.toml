@@ -1,46 +1,42 @@
 # Auto-approval prompt description (for documentation/reference)
 auto_approve_description = """
-Should this PR be automatically approved and merged without human review?
+Should this PR be automatically approved? Evaluate using these criteria:
 
-STEP 1 - QUICK SAFETY CHECK:
-First, scan for obvious red flags: secrets, hardcoded credentials, TODO/FIXME comments, console.log/print statements, commented-out code blocks, or any code that looks incomplete or experimental.
+**SAFETY SCAN** - Check for red flags:
+• Secrets, credentials, API keys, tokens
+• TODO/FIXME, console.log, commented code
+• Incomplete or experimental patterns
 
-STEP 2 - APPROVAL CRITERIA (all must be met):
-1. CODE SAFETY: No bugs, logic errors, or breaking changes
-2. SECURITY: No vulnerabilities, secrets, or unsafe patterns  
-3. TESTING: Adequate test coverage for changes made
-4. SCOPE: Limited, focused changes that are easy to understand
-5. BUSINESS IMPACT: Does not affect critical systems or user experience
+**AUTO-REJECT** these categories:
+• Authentication, payments, user data
+• Infrastructure, CI/CD, deployments
+• Database changes, migrations
+• Security code (auth, crypto, permissions)
+• API breaking changes
 
-STEP 3 - AUTOMATIC REJECTION for:
-- Payment processing, authentication, or user data handling
-- Infrastructure, CI/CD, deployment, or configuration changes
-- Database migrations or schema changes
-- Security-related code (auth, permissions, encryption)
+**REQUIRES HUMAN REVIEW** (unless trivial):
+• Dependencies (except patch bumps)
+• Error handling, logging changes
+• Performance-critical paths
+• Large UI/UX workflows
 
-STEP 4 - CAREFUL CONSIDERATION (likely reject unless very simple):
-- Dependency updates (package.json, requirements.txt, etc.)
-- API contract changes or new endpoints
-- UI/UX changes that affect user workflows
-- Performance-critical code paths
-- Error handling or logging changes
-- Third-party integrations
+**CAN AUTO-APPROVE** if ALL true:
+✓ No bugs or breaking changes
+✓ Tests cover the changes made
+✓ Clear, focused implementation
+✓ Low risk to existing functionality
+✓ No security concerns
 
-STEP 5 - FINAL DECISION:
-- If red flags found in Step 1 → FALSE
-- If ANY Step 3 criteria apply → FALSE  
-- If ANY Step 4 items apply → FALSE unless change is truly minimal (e.g., patch version bump, typo fix)
-- If ALL Step 2 criteria met AND no concerning patterns → TRUE
-- If uncertain about business impact → FALSE
-- Default to FALSE when in doubt
+**SAFE EXAMPLES**: 
+• Documentation, tests, formatting, typos
+• Simple bug fixes with tests
+• Non-breaking new features with tests
+• Refactoring without logic changes
+• Adding logging or metrics
+• Small, isolated improvements
+• Patch version dependency updates
 
-EXAMPLES OF SAFE AUTO-APPROVALS:
-- Bug fixes with tests in non-critical code
-- Documentation updates  
-- Code formatting/linting fixes
-- Simple refactoring with no logic changes
-- Adding unit tests
-- Typo fixes in comments or strings
+**DEFAULT TO FALSE when uncertain about impact**
 """
 
 [pr_review_prompt]
@@ -96,6 +92,7 @@ __new hunk__
 - **key_issues_to_review**: Use for bugs, potential problems, security risks, logic errors, or anything that could cause issues
 - **code_suggestions**: Use for improvements to working code - better patterns, performance optimizations, readability enhancements, or best practices
 
+
 {%- if extra_instructions %}
 
 
@@ -148,7 +145,7 @@ class Review(BaseModel):
     estimated_effort_to_review_[1-5]: int = Field(description="Estimate, on a scale of 1-5 (inclusive), the time and effort required to review this PR by an experienced and knowledgeable developer. 1 means short and easy review , 5 means long and hard review. Take into account the size, complexity, quality, and the needed changes of the PR code diff.")
 {%- endif %}
 {%- if require_score %}
-    score: str = Field(description="Rate this PR on a scale of 0-100 (use specific integers, avoid defaulting to 5s). Consider code quality, correctness, maintainability, and production readiness. Be strict but accurate and fair. 90-100 = excellent/production-ready, 80-89 = good quality, 70-79 = acceptable, 60-69 = below standard, 50-59 = poor quality, 1-49 = unacceptable/major rework needed.")
+    score: int = Field(description="Rate this PR on a scale of 0-100 (use specific integers, avoid defaulting to 5s). Consider code quality, correctness, maintainability, and production readiness. Be strict but accurate and fair. 90-100 = excellent/production-ready, 80-89 = good quality, 70-79 = acceptable, 60-69 = below standard, 50-59 = poor quality, 1-49 = unacceptable/major rework needed.")
 {%- endif %}
 {%- if require_tests %}
     relevant_tests: str = Field(description="yes\\no question: does this PR have relevant tests added or updated ?")
@@ -157,8 +154,8 @@ class Review(BaseModel):
     insights_from_user_answers: str = Field(description="shortly summarize the insights you gained from the user's answers to the questions")
 {%- endif %}
     confidence_score_[1-100]: int = Field(description="Your confidence level in this analysis on a scale of 1-100 (use specific integers, avoid defaulting to 5s). Be honest about uncertainty: 95-100 = very confident with complete context, 80-94 = confident but some unknowns, 60-79 = moderate confidence with limited context, 40-59 = low confidence due to complexity/ambiguity, 20-39 = very uncertain, 1-19 = extremely uncertain. Consider code clarity, completeness of context, diff size, and your ability to assess all potential issues.")
-    complexity_score_[1-10]: int = Field(description="Rate the code complexity on a scale of 1-10. 1-2 = trivial (config, docs, simple assignments), 3-4 = simple (basic functions, straightforward logic), 5-6 = moderate (some business logic, multiple functions), 7-8 = complex (algorithms, design patterns, intricate logic), 9-10 = very complex (advanced algorithms, complex architecture, hard to understand).")
-    security_score_[1-10]: int = Field(description="Rate the security safety level on a scale of 1-10, 10 = completely secure (docs, tests, simple logic), 8-9 = very secure (minor exposure potential), 6-7 = moderately secure (some data handling), 4-5 = security concerns (user input, API calls), 2-3 = high risk (auth, payments, sensitive data), 1 = critical security risk (major vulnerabilities).")
+    complexity_score_[1-10]: int = Field(description="Rate the code complexity on a scale of 1-10 (use specific integers, avoid defaulting to 5s). 1-2 = trivial (config, docs, simple assignments), 3-4 = simple (basic functions, straightforward logic), 5-6 = moderate (some business logic, multiple functions), 7-8 = complex (algorithms, design patterns, intricate logic), 9-10 = very complex (advanced algorithms, complex architecture, hard to understand).")
+    security_score_[1-10]: int = Field(description="Rate the security safety level on a scale of 1-10 (use specific integers, avoid defaulting to 5s). 10 = completely secure (docs, tests, simple logic), 8-9 = very secure (minor exposure potential), 6-7 = moderately secure (some data handling), 4-5 = security concerns (user input, API calls), 2-3 = high risk (auth, payments, sensitive data), 1 = critical security risk (major vulnerabilities).")
     # Auto-approval recommendation (using the auto_approve_description variable)
     auto_approve_recommendation: bool = Field(description="${auto_approve_description}")
     auto_approve_reasoning: str = Field(description="Explain your reasoning for the auto-approval recommendation. If recommending approval, explain why it's safe. If not recommending, explain what concerns prevent auto-approval. Be specific and concise.")
@@ -203,11 +200,11 @@ review:
   relevant_tests: |
     false
   confidence_score_[1-100]: |
-    85
+    72
   complexity_score_[1-10]: |
-    4
+    3
   security_score_[1-10]: |
-    9
+    8
   auto_approve_recommendation: |
     true
   auto_approve_reasoning: |
@@ -331,11 +328,11 @@ review:
   relevant_tests: |
     false
   confidence_score_[1-100]: |
-    85
+    64
   complexity_score_[1-10]: |
-    4
+    6
   security_score_[1-10]: |
-    9
+    7
   auto_approve_recommendation: |
     true
   auto_approve_reasoning: |
