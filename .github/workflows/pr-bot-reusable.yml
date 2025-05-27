@@ -50,7 +50,7 @@ jobs:
     
     steps:
     - name: GitHub PR Bot Analysis
-      uses: docker://jacsamell/github-pr-bot:latest
+      uses: docker://ghcr.io/jacsamell/github-pr-bot:latest
       env:
         # GitHub Action environment
         GITHUB_EVENT_NAME: ${{ github.event_name }}

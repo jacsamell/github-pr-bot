@@ -165,7 +165,7 @@ async def handle_push_trigger_for_new_commits(body: Dict[str, Any],
         return {}
     if get_settings().github_app.push_trigger_ignore_merge_commits and after_sha == merge_commit_sha:
         return {}
-    
+
 
 
     # Prevent triggering multiple times for subsequent push triggers when one is enough:

@@ -6,7 +6,7 @@ import os
 from dynaconf import Dynaconf
 from starlette_context import context
 
-PR_AGENT_TOML_KEY = 'pr-agent'
+PR_AGENT_TOML_KEY = 'pr-bot'
 
 current_dir = dirname(abspath(__file__))
 global_settings = Dynaconf(

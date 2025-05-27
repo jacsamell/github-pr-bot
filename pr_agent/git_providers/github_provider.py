@@ -1158,6 +1158,8 @@ class GithubProvider(GitProvider):
                                     if match:
                                         section_header, size1, size2, start1, start2 = extract_hunk_headers(match)
                                         file.patches_range.append({'start': start2, 'end': start2 + size2 - 1})
+                                    else:
+                                        get_logger().warning(f"Invalid hunk header format in patch: {line}")
 
                         patches_range = file.patches_range
                         comment_start_line = suggestion.get('relevant_lines_start', None)

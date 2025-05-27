@@ -90,7 +90,7 @@ require_ticket_analysis_review=true
 persistent_comment=true
 extra_instructions = ""
 num_max_findings = 5
-final_update_message = true
+final_update_message = false
 # review labels
 enable_review_labels_security=false
 enable_review_labels_effort=false
@@ -108,7 +108,7 @@ generate_ai_title=false
 use_bullet_points=true
 extra_instructions = ""
 enable_pr_type=true
-final_update_message = true
+final_update_message = false
 enable_help_text=false
 enable_help_comment=true
 # describe as comment

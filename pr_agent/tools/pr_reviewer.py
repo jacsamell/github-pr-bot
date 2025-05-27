@@ -148,7 +148,9 @@ class PRReviewer:
                 return None
 
             if get_settings().config.publish_output and not get_settings().config.get('is_auto_command', False):
-                self.git_provider.publish_comment("Preparing review...", is_temporary=True)
+                # Disabled "Preparing review..." status message to reduce comment clutter
+                # self.git_provider.publish_comment("Preparing review...", is_temporary=True)
+                pass
 
             await retry_with_fallback_models(self._prepare_prediction, model_type=ModelType.REGULAR)
             if not self.prediction:

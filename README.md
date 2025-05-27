@@ -1,26 +1,22 @@
 # GitHub PR Bot
 
-Automated pull request analysis, review, and approval using Claude AI.
+AI-powered pull request analysis, review, and auto-approval using Claude.
 
-> **License Notice:** This is a modified version of [PR-Agent](https://github.com/Codium-ai/pr-agent) by Codium AI, licensed under AGPL v3. This modified version is also licensed under AGPL v3. [Source code available here](https://github.com/jacsamell/github-pr-bot).
+> **License Notice:** Modified version of [PR-Agent](https://github.com/Codium-ai/pr-agent) by Codium AI, licensed under AGPL v3. [Source code available here](https://github.com/jacsamell/github-pr-bot).
 
-## Overview
+## Features
 
-GitHub PR Bot helps efficiently review and handle pull requests by providing AI-powered feedback, suggestions, and automated approval for safe changes. Built specifically for company use with Claude Sonnet 4.
-
-### Key Features
-
-- **Auto Description**: Automatically generates PR descriptions with title, summary, and labels
-- **Auto Review**: Provides detailed feedback on code quality, security, and potential issues  
-- **Code Suggestions**: Offers specific improvements and best practices
-- **Auto Approval**: Safely approves PRs that meet quality criteria
-- **Automatic Triggers**: Runs on PR creation, updates, and when ready for review
+- **Auto Description** - Generates PR titles, summaries, and labels
+- **Auto Review** - Provides detailed code feedback and security analysis  
+- **Code Suggestions** - Offers specific improvements and best practices
+- **Auto Approval** - Safely approves PRs that meet quality criteria
+- **Smart Triggers** - Runs on PR events or manual `##prbot` trigger
 
 ## Quick Setup
 
-### 1. Add to Your Repository
+### 1. Add Workflow
 
-Add the workflow file `.github/workflows/pr-bot.yml`:
+Create `.github/workflows/pr-bot.yml`:
 
 ```yaml
 name: GitHub PR Bot
@@ -31,76 +27,24 @@ on:
 
 jobs:
   pr-bot:
-    uses: ./.github/workflows/pr-bot-reusable.yml
+    uses: jacsamell/github-pr-bot/.github/workflows/pr-bot-reusable.yml@main
     with:
       auto_review: true
       auto_describe: true
       auto_improve: true
       enable_auto_approval: true
-      max_findings: 8
     secrets:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
-### 2. Configure Repository Secrets
+### 2. Add API Key
 
-Add your Anthropic API key to repository secrets:
-- Go to Settings → Secrets and variables → Actions
-- Add `ANTHROPIC_API_KEY` with your Claude API key
+Go to Settings → Secrets → Actions and add:
+- `ANTHROPIC_API_KEY` - Your Claude API key
 
-### 3. Configuration
+### 3. Configuration (Optional)
 
-Create `.pr_bot.toml` in your repository root:
-
-```toml
-# Production GitHub PR Bot Configuration
-
-[config]
-model = "anthropic/claude-sonnet-4-20250514"
-fallback_models = []
-
-[github_action_config]
-# Require ##prbot trigger in PR description to activate GitHub PR Bot
-require_aidesc_trigger = true
-
-# Auto-run all PR tools by default
-auto_describe = true
-auto_review = true
-auto_improve = true
-enable_output = true
-```
-
-## Usage
-
-### Automatic Mode
-
-With `require_aidesc_trigger = true`, add `##prbot` anywhere in your PR description to activate GitHub PR Bot.
-
-### Manual Commands (Optional)
-
-If you enable comment handling, you can also use:
-- `/review` - Get detailed code review
-- `/describe` - Generate/update PR description
-- `/improve` - Get code improvement suggestions
-- `/ask [question]` - Ask specific questions about the code
-
-## Auto-Approval
-
-The system can automatically approve PRs that meet safety criteria:
-
-- ✅ Documentation updates
-- ✅ Test additions
-- ✅ Minor refactoring
-- ✅ Configuration changes
-- ❌ Critical business logic
-- ❌ Security-sensitive code
-- ❌ Database migrations
-
-Auto-approval decisions include detailed reasoning and can be overridden by manual review.
-
-## Configuration Options
-
-Key settings in `.pr_bot.toml`:
+Create `.pr_bot.toml`:
 
 ```toml
 [config]
@@ -108,76 +52,31 @@ model = "anthropic/claude-sonnet-4-20250514"
 enable_auto_approval = true
 max_model_tokens = 100000
 
-[pr_reviewer]
-persistent_comment = true
-num_max_findings = 8
-
 [github_action_config]
-require_aidesc_trigger = true  # Set to false for all PRs
-auto_review = true
+require_aidesc_trigger = true  # Requires ##prbot in PR description
 auto_describe = true
+auto_review = true
 auto_improve = true
 ```
 
-### GitHub Actions Configuration
+## Usage
 
-You can customize the workflow behavior by modifying the workflow inputs:
+### Automatic Mode
+- Runs on all PRs (default)
+- Or add `##prbot` to PR description if `require_aidesc_trigger = true`
 
-```yaml
-jobs:
-  pr-bot:
-    uses: ./.github/workflows/pr-bot-reusable.yml
-    with:
-      auto_review: true
-      auto_describe: true
-      auto_improve: true
-      enable_auto_approval: true
-      max_findings: 8
-      pretty_logs: true  # Enable colorful emoji logs (default: true)
-    secrets:
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-```
+### Manual Commands
+- `/review` - Get code review
+- `/describe` - Generate PR description  
+- `/improve` - Get code suggestions
 
-**Logging Options:**
-- `pretty_logs: true` - Colorful console logs with emojis (🚀 🔍 ✅)
-- `pretty_logs: false` - Plain JSON logs for structured parsing
+## Auto-Approval
 
-## Security & Privacy
-
-- Code is only sent to Claude when GitHub PR Bot is explicitly triggered
-- No data is stored or used for training
-- All processing happens in real-time
-- Audit trail maintained through GitHub comments
-
-## Troubleshooting
-
-### Common Issues
-
-**GitHub PR Bot not running:**
-- Check that `##prbot` is in PR description (if trigger required)
-- Verify `ANTHROPIC_API_KEY` secret is set
-- Check GitHub Actions logs for errors
-
-**Token limit errors:**
-- Large PRs may hit token limits
-- System automatically chunks large diffs
-- Consider breaking large PRs into smaller ones
-
-**Auto-approval not working:**
-- Check that `enable_auto_approval = true` in config
-- Review the approval reasoning in PR comments
-- Some changes require manual approval for safety
-
-### Support
-
-For issues or questions:
-1. Check GitHub Actions logs
-2. Review configuration settings
-3. Contact the development team
+Automatically approves safe changes:
+- ✅ Documentation updates, tests, minor refactoring
+- ❌ Critical business logic, security code, database changes
 
 ## Development
-
-To run locally for testing:
 
 ```bash
 # Install dependencies
@@ -191,10 +90,4 @@ export GITHUB_TOKEN="your-github-token"
 python -m pr_agent.cli --pr_url=https://github.com/owner/repo/pull/123 review
 ```
 
-## License
 
-This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
-
-This is a modified version of [PR-Agent](https://github.com/Codium-ai/pr-agent) by Codium AI. As required by the AGPL license, the source code for this modified version is available at [https://github.com/jacsamell/github-pr-bot](https://github.com/jacsamell/github-pr-bot).
-
-See the [LICENSE](LICENSE) file for the full license text.
