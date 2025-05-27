@@ -43,6 +43,10 @@ on:
         description: 'Anthropic API key for Claude access'
         required: true
 
+concurrency:
+  group: pr-bot-reusable-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   pr-bot:
     runs-on: ubuntu-latest

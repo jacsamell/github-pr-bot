@@ -1,20 +1,29 @@
 # AI-Powered GitHub PR Bot
 
-🤖 Intelligent pull request analysis, review, and auto-approval using Claude AI
+🤖 **Intelligent pull request analysis, review, and auto-approval using Claude AI**
 
 [![GitHub Marketplace](https://img.shields.io/badge/Marketplace-AI--Powered%20GitHub%20PR%20Bot-blue.svg?colorA=24292e&colorB=0366d6&style=flat&longCache=true&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAM6wAADOsB5dZE0gAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAERSURBVCiRhZG/SsMxFEZPfsVJ61jbxaF0cRQRcRJ9hlYn30IHN/+9iquDCOIsblIrOjqKgy5aKoJQj4n3EX8DY7ECnEMOeQf+c9/hGtlRsuUiEd3yAAYA4Dr4++2q7dMFNE7dmNBKY0BSk5sehqPfekNzKG0+Qi3GG734+O3zwVwpPy2s2HnP+p7Xh8+dSoGg2XrTg/HcNTDajqHoDdDqNLAqFwTjZm56UCEk6dSBRqDGYSUOu66Zg+I2fNZs/M3/f/Grl/XnyF1Gw3VKCez0PN5IUfFLqvgUN4C0qNqYs5YhPL+aVZYDE4IpUk57oSFnJm4FyCqqOE0jhY2SMyLFoo56zyo6becOS5UVDdj7Vih0zp+tcMhwRpBeLyqtIjlJBFdqyoJuAn9MSL9CCVpkTx/9qAAAAABJRU5ErkJggg==)](https://github.com/marketplace/actions/ai-powered-github-pr-bot)
 
-Transform your pull request workflow with AI-powered automation that provides intelligent code reviews, generates comprehensive descriptions, and safely auto-approves quality changes.
+**Transform your pull request workflow** with AI-powered automation that provides intelligent code reviews, generates comprehensive descriptions, and safely auto-approves quality changes.
+
+## ✨ Why Use This Bot?
+
+- 🔍 **Catch Issues Early** - AI reviews every line for bugs, security issues, and best practices
+- 📝 **Auto-Generate Descriptions** - Never write PR descriptions again
+- ⚡ **Speed Up Reviews** - Auto-approve safe changes, focus human review on what matters
+- 🛡️ **Security First** - Built-in security analysis and safe auto-approval logic
 
 > **License Notice:** Modified version of [PR-Agent](https://github.com/Codium-ai/pr-agent) by Codium AI, licensed under AGPL v3. [Source code available here](https://github.com/jacsamell/github-pr-bot).
 
-## Features
+## 🎯 Core Features
 
-- **Auto Description** - Generates PR titles, summaries, and labels
-- **Auto Review** - Provides detailed code feedback and security analysis  
-- **Code Suggestions** - Offers specific improvements and best practices
-- **Auto Approval** - Safely approves PRs that meet quality criteria
-- **Smart Triggers** - Runs on PR events or manual `##prbot` trigger
+| Feature | Description | Benefits |
+|---------|-------------|----------|
+| 🤖 **Auto Review** | Comprehensive code analysis with security scanning | Catch bugs, security issues, and code quality problems |
+| 📋 **Auto Description** | AI-generated PR titles, summaries, and labels | Save time, improve PR documentation |
+| 💡 **Code Suggestions** | Specific improvements and best practices | Learn better coding patterns, optimize performance |
+| ✅ **Auto Approval** | Safe approval of low-risk changes | Speed up workflow, focus reviews on complex changes |
+| 🎯 **Smart Triggers** | Flexible activation via PR events or manual commands | Control when and how the bot runs |
 
 ## 🚀 Quick Setup
 
@@ -63,9 +72,18 @@ jobs:
           require_trigger: false
 ```
 
-### Required Secrets
+### 🔑 Required Setup
 
-Add these secrets in your repository settings (Settings → Secrets and variables → Actions):
+**1. Get Your Anthropic API Key**
+- Visit [Anthropic Console](https://console.anthropic.com/)
+- Create an account and generate an API key
+- Make sure you have Claude API access
+
+**2. Add Secret to GitHub**
+- Go to your repository → Settings → Secrets and variables → Actions
+- Click "New repository secret"
+- Name: `ANTHROPIC_API_KEY`
+- Value: Your API key from step 1
 
 | Secret | Description | Required |
 |--------|-------------|----------|
@@ -122,11 +140,25 @@ auto_improve = true
 - `/describe` - Generate PR description  
 - `/improve` - Get code suggestions
 
-## Auto-Approval
+## 🔒 Auto-Approval Safety
 
-Automatically approves safe changes:
-- ✅ Documentation updates, tests, minor refactoring
-- ❌ Critical business logic, security code, database changes
+The bot uses intelligent criteria to safely auto-approve low-risk changes:
+
+### ✅ **Safe to Auto-Approve**
+- Documentation updates and README changes
+- Test additions and improvements  
+- Minor refactoring and code cleanup
+- Configuration file updates
+- Dependency updates (non-breaking)
+
+### ❌ **Requires Human Review**
+- Critical business logic changes
+- Security-related code modifications
+- Database schema changes
+- API contract modifications
+- Complex algorithmic changes
+
+**Safety First**: The bot errs on the side of caution - when in doubt, it requests human review.
 
 ## 🔒 Security & Privacy
 

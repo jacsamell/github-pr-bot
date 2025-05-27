@@ -63,13 +63,13 @@ branding:
 
 runs:
   using: 'docker'
-  image: 'Dockerfile.github_action'
+  image: 'ghcr.io/jacsamell/github-pr-bot:latest'
   env:
     ANTHROPIC__KEY: ${{ inputs.anthropic_api_key }}
     GITHUB_TOKEN: ${{ inputs.github_token }}
-    CONFIG__AUTO_REVIEW: ${{ inputs.auto_review }}
-    CONFIG__AUTO_DESCRIBE: ${{ inputs.auto_describe }}
-    CONFIG__AUTO_IMPROVE: ${{ inputs.auto_improve }}
+    GITHUB_ACTION_CONFIG__AUTO_REVIEW: ${{ inputs.auto_review }}
+    GITHUB_ACTION_CONFIG__AUTO_DESCRIBE: ${{ inputs.auto_describe }}
+    GITHUB_ACTION_CONFIG__AUTO_IMPROVE: ${{ inputs.auto_improve }}
     CONFIG__ENABLE_AUTO_APPROVAL: ${{ inputs.enable_auto_approval }}
     CONFIG__MODEL: ${{ inputs.model }}
     CONFIG__MAX_MODEL_TOKENS: ${{ inputs.max_model_tokens }}

@@ -4,6 +4,10 @@ on:
   pull_request:
     types: [opened, reopened, ready_for_review, synchronize]
 
+concurrency:
+  group: pr-bot-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   pr-bot:
     runs-on: ubuntu-latest
