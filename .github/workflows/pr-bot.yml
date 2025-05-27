@@ -12,11 +12,8 @@ jobs:
   pr-bot:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      
     - name: GitHub PR Bot Analysis
-      uses: ./
+      uses: jacsamell/github-pr-bot@v1.0.1
       with:
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
         github_token: ${{ github.token }}

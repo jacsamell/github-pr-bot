@@ -126,7 +126,7 @@ def convert_to_markdown_v2(output_data: dict,
         "Can be split": "🔀",
         "Key issues to review": "⚡",
         "Recommended focus areas for review": "⚡",
-        "Score": "🏅",
+        "AI Review Score": "🏅",
         "Relevant tests": "🧪",
         "Focused PR": "✨",
         "Relevant ticket": "🎫",
@@ -195,19 +195,21 @@ def convert_to_markdown_v2(output_data: dict,
         elif 'security concerns' in key_nice.lower():
             if gfm_supported:
                 markdown_text += f"<tr><td>"
+                # Handle string security concerns field
                 if is_value_no(value):
                     markdown_text += f"{emoji}&nbsp;<strong>No security concerns identified</strong>"
                 else:
                     markdown_text += f"{emoji}&nbsp;<strong>Security concerns</strong><br><br>\n\n"
-                    value = emphasize_header(value.strip())
+                    value = emphasize_header(value_str)
                     markdown_text += f"{value}"
                 markdown_text += f"</td></tr>\n"
             else:
+                # Handle string security concerns field
                 if is_value_no(value):
                     markdown_text += f'### {emoji} No security concerns identified\n\n'
                 else:
                     markdown_text += f"### {emoji} Security concerns\n\n"
-                    value = emphasize_header(value.strip(), only_markdown=True)
+                    value = emphasize_header(str(value).strip(), only_markdown=True)
                     markdown_text += f"{value}\n\n"
         elif 'can be split' in key_nice.lower():
             if gfm_supported:
@@ -327,6 +329,23 @@ def convert_to_markdown_v2(output_data: dict,
                 if gfm_supported:
                     markdown_text += f"</td></tr>\n"
         else:
+            # Special case for score field - rename it to "AI Review Score" and add percentage
+            if key_nice.lower() == 'score':
+                key_nice = 'AI Review Score'
+                # Add percentage sign to the value
+                try:
+                    score_value = str(value).strip()
+                    if score_value.isdigit():
+                        value = f"{score_value}%"
+                    elif not score_value.endswith('%'):
+                        # Try to extract number from string
+                        import re
+                        match = re.search(r'\d+', score_value)
+                        if match:
+                            value = f"{match.group()}%"
+                except:
+                    pass  # Keep original value if parsing fails
+            
             if gfm_supported:
                 markdown_text += f"<tr><td>"
                 markdown_text += f"{emoji}&nbsp;<strong>{key_nice}</strong>: {value}"

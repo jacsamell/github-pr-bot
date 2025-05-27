@@ -148,7 +148,7 @@ class Review(BaseModel):
     estimated_effort_to_review_[1-5]: int = Field(description="Estimate, on a scale of 1-5 (inclusive), the time and effort required to review this PR by an experienced and knowledgeable developer. 1 means short and easy review , 5 means long and hard review. Take into account the size, complexity, quality, and the needed changes of the PR code diff.")
 {%- endif %}
 {%- if require_score %}
-    score: str = Field(description="Rate this PR on a scale of 0-100 (inclusive), where 0 means the worst possible PR code, and 100 means PR code of the highest quality, without any bugs or performance issues, that is ready to be merged immediately and run in production at scale.")
+    score: str = Field(description="Rate this PR on a scale of 0-100 (use specific integers, avoid defaulting to 5s). Consider code quality, correctness, maintainability, and production readiness. Be strict but accurate and fair. 90-100 = excellent/production-ready, 80-89 = good quality, 70-79 = acceptable, 60-69 = below standard, 50-59 = poor quality, 1-49 = unacceptable/major rework needed.")
 {%- endif %}
 {%- if require_tests %}
     relevant_tests: str = Field(description="yes\\no question: does this PR have relevant tests added or updated ?")
@@ -156,9 +156,9 @@ class Review(BaseModel):
 {%- if question_str %}
     insights_from_user_answers: str = Field(description="shortly summarize the insights you gained from the user's answers to the questions")
 {%- endif %}
-    confidence_score_[1-100]: int = Field(description="Your confidence level in this analysis on a scale of 1-100, where 100 means completely confident and 1 means very uncertain. Consider factors like code clarity, completeness of context, and your ability to assess potential issues.")
-    complexity_score_[1-10]: int = Field(description="Rate the code complexity on a scale of 1-10, where 1 is very simple (basic variable assignments, simple function calls) and 10 is very complex (intricate algorithms, multiple design patterns, complex business logic).")
-    security_score_[1-10]: int = Field(description="Rate the security safety level on a scale of 1-10, where 10 means very secure (no security concerns) and 1 means high security risk. Consider data exposure, injection vulnerabilities, authentication issues, etc.")
+    confidence_score_[1-100]: int = Field(description="Your confidence level in this analysis on a scale of 1-100 (use specific integers, avoid defaulting to 5s). Be honest about uncertainty: 95-100 = very confident with complete context, 80-94 = confident but some unknowns, 60-79 = moderate confidence with limited context, 40-59 = low confidence due to complexity/ambiguity, 20-39 = very uncertain, 1-19 = extremely uncertain. Consider code clarity, completeness of context, diff size, and your ability to assess all potential issues.")
+    complexity_score_[1-10]: int = Field(description="Rate the code complexity on a scale of 1-10. 1-2 = trivial (config, docs, simple assignments), 3-4 = simple (basic functions, straightforward logic), 5-6 = moderate (some business logic, multiple functions), 7-8 = complex (algorithms, design patterns, intricate logic), 9-10 = very complex (advanced algorithms, complex architecture, hard to understand).")
+    security_score_[1-10]: int = Field(description="Rate the security safety level on a scale of 1-10, 10 = completely secure (docs, tests, simple logic), 8-9 = very secure (minor exposure potential), 6-7 = moderately secure (some data handling), 4-5 = security concerns (user input, API calls), 2-3 = high risk (auth, payments, sensitive data), 1 = critical security risk (major vulnerabilities).")
     # Auto-approval recommendation (using the auto_approve_description variable)
     auto_approve_recommendation: bool = Field(description="${auto_approve_description}")
     auto_approve_reasoning: str = Field(description="Explain your reasoning for the auto-approval recommendation. If recommending approval, explain why it's safe. If not recommending, explain what concerns prevent auto-approval. Be specific and concise.")
@@ -166,7 +166,7 @@ class Review(BaseModel):
     key_issues_to_review: List[KeyIssuesComponentLink] = Field("A short and diverse list (0-{{ num_max_findings }} issues) of high-priority bugs, problems, security concerns, or potential issues that require attention and validation during the review process.")
     code_suggestions: List[CodeSuggestion] = Field("A short list (0-3 suggestions) of actionable code improvements that would enhance quality, performance, or maintainability. These should be enhancements to working code, not fixes for problems (use key_issues_to_review for problems).")
 {%- if require_security_review %}
-    has_security_concerns: bool = Field(description="Does this PR code introduce possible vulnerabilities such as exposure of sensitive information (e.g., API keys, secrets, passwords), or security concerns like SQL injection, XSS, CSRF, and others? Return true if there are security concerns, false if the code is secure.")
+    security_concerns: str = Field(description="Analyze this PR for security vulnerabilities such as exposure of sensitive information (e.g., API keys, secrets, passwords), SQL injection, XSS, CSRF, and other security concerns. IMPORTANT: If no security concerns are found, respond EXACTLY with 'false'. If ANY security concerns exist, provide a brief description of the specific concerns found. Any response other than 'false' will be treated as indicating security issues are present.")
 {%- endif %}
 {%- if require_can_be_split_review %}
     can_be_split: List[SubPR] = Field(min_items=0, max_items=3, description="Can this PR, which contains {{ num_pr_files }} changed files in total, be divided into smaller sub-PRs with distinct tasks that can be reviewed and merged independently, regardless of the order ? Make sure that the sub-PRs are indeed independent, with no code dependencies between them, and that each sub-PR represent a meaningful independent task. Output an empty list if the PR code does not need to be split.")
@@ -201,7 +201,7 @@ review:
   score: 89
 {%- endif %}
   relevant_tests: |
-    No
+    false
   confidence_score_[1-100]: |
     85
   complexity_score_[1-10]: |
@@ -222,8 +222,8 @@ review:
       start_line: 12
       end_line: 14
     - ...
-  has_security_concerns: |
-    No
+  security_concerns: |
+    false
 {%- if require_can_be_split_review %}
   can_be_split:
   - relevant_files:
@@ -329,7 +329,7 @@ review:
   score: 89
 {%- endif %}
   relevant_tests: |
-    No
+    false
   confidence_score_[1-100]: |
     85
   complexity_score_[1-10]: |
@@ -350,8 +350,8 @@ review:
       start_line: 12
       end_line: 14
     - ...
-  has_security_concerns: |
-    No
+  security_concerns: |
+    false
 {%- if require_can_be_split_review %}
   can_be_split:
   - relevant_files:
