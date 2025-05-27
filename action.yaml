@@ -1,5 +1,5 @@
 name: 'AI-Powered PR Bot'
-description: 'Automated PR analysis, review, and approval using Claude AI. Generates descriptions, provides code feedback, and safely auto-approves quality PRs.'
+description: 'AI-powered PR analysis, review, and auto-approval using Claude. Generates descriptions and provides intelligent code feedback.'
 author: 'jacsamell'
 
 inputs:
