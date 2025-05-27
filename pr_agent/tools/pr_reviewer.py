@@ -15,7 +15,7 @@ from pr_agent.algo.pr_processing import (add_ai_metadata_to_diff_files,
 from pr_agent.algo.token_handler import TokenHandler
 from pr_agent.algo.utils import (ModelType, PRReviewHeader,
                                  convert_to_markdown_v2, github_action_output,
-                                 load_yaml, show_relevant_configurations)
+                                 load_yaml, show_relevant_configurations, is_value_no)
 from pr_agent.config_loader import get_settings
 from pr_agent.git_providers import (get_git_provider,
                                     get_git_provider_with_context)
@@ -246,9 +246,9 @@ class PRReviewer:
         the feedback.
         """
         first_key = 'review'
-        last_key = 'has_security_concerns'
+        last_key = 'security_concerns'
         data = load_yaml(self.prediction.strip(),
-                         keys_fix_yaml=["ticket_compliance_check", "estimated_effort_to_review_[1-5]:", "has_security_concerns:", "key_issues_to_review:", "code_suggestions:",
+                         keys_fix_yaml=["ticket_compliance_check", "estimated_effort_to_review_[1-5]:", "security_concerns:", "key_issues_to_review:", "code_suggestions:",
                                         "confidence_score_[1-100]:", "complexity_score_[1-10]:", "security_score_[1-10]:", "auto_approve_recommendation:",
                                         "auto_approve_reasoning:", "requires_human_approval:", "relevant_file:", "relevant_line:", "suggestion:", "suggestion_header:",
                                         "suggestion_content:", "existing_code:", "improved_code:"],
@@ -409,8 +409,9 @@ class PRReviewer:
             
             # Add security labels if enabled
             if get_settings().pr_reviewer.enable_review_labels_security and get_settings().pr_reviewer.require_security_review:
-                has_security_concerns = data['review'].get('has_security_concerns', False)  # true/false boolean
-                if has_security_concerns:
+                security_concerns = data['review'].get('security_concerns', '')
+                # Check if there are actual security concerns
+                if not is_value_no(security_concerns):
                     review_labels.append('Possible security concern')
             
             # Always add human approval requirement label if present (independent of other label settings)
@@ -539,9 +540,9 @@ class PRReviewer:
         """Parse the AI prediction to extract review data"""
         try:
             first_key = 'review'
-            last_key = 'has_security_concerns'
+            last_key = 'security_concerns'
             data = load_yaml(self.prediction.strip(),
-                             keys_fix_yaml=["ticket_compliance_check", "estimated_effort_to_review_[1-5]:", "has_security_concerns:", "key_issues_to_review:", "code_suggestions:",
+                             keys_fix_yaml=["ticket_compliance_check", "estimated_effort_to_review_[1-5]:", "security_concerns:", "key_issues_to_review:", "code_suggestions:",
                                             "confidence_score_[1-100]:", "complexity_score_[1-10]:", "security_score_[1-10]:", "auto_approve_recommendation:",
                                             "auto_approve_reasoning:", "requires_human_approval:", "relevant_file:", "relevant_line:", "suggestion:", "suggestion_header:",
                                             "suggestion_content:", "existing_code:", "improved_code:"],
@@ -594,8 +595,8 @@ class PRReviewer:
         
         # Extract issues and security concerns
         issues = review_data.get('key_issues_to_review', [])
-        has_security_concerns = review_data.get('has_security_concerns', False)
-        has_security_issues = has_security_concerns
+        security_concerns = review_data.get('security_concerns', '')
+        has_security_issues = not is_value_no(security_concerns)
         
         # Build details string
         details = f"""
@@ -684,3 +685,5 @@ class PRReviewer:
             return max(min_val, min(max_val, score))
         except (ValueError, TypeError):
             return default
+
+
