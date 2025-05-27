@@ -13,15 +13,15 @@ inputs:
   auto_review:
     description: 'Enable automatic code review'
     required: false
-    default: 'true'
+    default: 'false'
   auto_describe:
     description: 'Enable automatic PR description generation'
     required: false
-    default: 'true'
+    default: 'false'
   auto_improve:
     description: 'Enable code improvement suggestions'
     required: false
-    default: 'true'
+    default: 'false'
   enable_auto_approval:
     description: 'Enable automatic approval of safe changes'
     required: false

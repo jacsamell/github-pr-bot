@@ -13,16 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: GitHub PR Bot Analysis
-      uses: jacsamell/github-pr-bot@v0.0.1
+      uses: jacsamell/github-pr-bot@v1.0.0
       with:
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-        github_token: ${{ github.token }}
-        model: 'anthropic/claude-sonnet-4-20250514'
-        enable_auto_approval: true
         auto_review: true
-        auto_describe: false
-        auto_improve: false
-        max_model_tokens: '100000'
-        require_trigger: false
-        max_findings: 5
-        pretty_logs: true
+        enable_auto_approval: true

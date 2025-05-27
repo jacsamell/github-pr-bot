@@ -200,7 +200,7 @@ def convert_to_markdown_v2(output_data: dict,
                     markdown_text += f"{emoji}&nbsp;<strong>No security concerns identified</strong>"
                 else:
                     markdown_text += f"{emoji}&nbsp;<strong>Security concerns</strong><br><br>\n\n"
-                    value = emphasize_header(value_str)
+                    value = emphasize_header(value)
                     markdown_text += f"{value}"
                 markdown_text += f"</td></tr>\n"
             else:
