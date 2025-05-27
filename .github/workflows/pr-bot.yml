@@ -19,7 +19,7 @@ jobs:
         model: 'anthropic/claude-sonnet-4-20250514'
         enable_auto_approval: true
         auto_review: true
-        auto_describe: true
+        auto_describe: false
         auto_improve: false
         max_model_tokens: '100000'
         require_trigger: false
