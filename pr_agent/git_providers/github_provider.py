@@ -927,7 +927,8 @@ class GithubProvider(GitProvider):
         try:
             label_color_map = {"Bug fix": "1d76db", "Tests": "e99695", "Bug fix with tests": "c5def5",
                                "Enhancement": "bfd4f2", "Documentation": "d4c5f9",
-                               "Other": "d1bcf9"}
+                               "Other": "d1bcf9", "AI Approved": "c5f9c5", "Human Review Required": "d1bcf9"}
+            
             post_parameters = []
             for p in pr_types:
                 color = label_color_map.get(p, "d1bcf9")  # default to "Other" color
