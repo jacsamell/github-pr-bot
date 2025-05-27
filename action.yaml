@@ -63,7 +63,7 @@ branding:
 
 runs:
   using: 'docker'
-  image: 'docker://ghcr.io/jacsamell/github-pr-bot:latest'
+  image: 'docker://ghcr.io/jacsamell/github-pr-bot:v1'
   env:
     ANTHROPIC__KEY: ${{ inputs.anthropic_api_key }}
     GITHUB_TOKEN: ${{ inputs.github_token }}
