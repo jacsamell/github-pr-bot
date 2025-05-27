@@ -267,6 +267,65 @@ def convert_to_markdown_v2(output_data: dict,
                         get_logger().exception(f"Failed to process 'Recommended focus areas for review': {e}")
                 if gfm_supported:
                     markdown_text += f"</td></tr>\n"
+        elif 'code suggestions' in key_nice.lower():
+            # value is a list of code suggestions
+            if is_value_no(value) or not value:
+                if gfm_supported:
+                    markdown_text += f"<tr><td>"
+                    markdown_text += f"💡&nbsp;<strong>No code suggestions</strong>"
+                    markdown_text += f"</td></tr>\n"
+                else:
+                    markdown_text += f"### 💡 No code suggestions\n\n"
+            else:
+                suggestions = value
+                if gfm_supported:
+                    markdown_text += f"<tr><td>"
+                    markdown_text += f"💡&nbsp;<strong>Code suggestions</strong><br><br>\n\n"
+                else:
+                    markdown_text += f"### 💡 Code suggestions\n\n"
+                for i, suggestion in enumerate(suggestions):
+                    try:
+                        if not suggestion or not isinstance(suggestion, dict):
+                            continue
+                        relevant_file = suggestion.get('relevant_file', '').strip()
+                        suggestion_header = suggestion.get('suggestion_header', '').strip()
+                        suggestion_content = suggestion.get('suggestion_content', '').strip()
+                        existing_code = suggestion.get('existing_code', '').strip()
+                        improved_code = suggestion.get('improved_code', '').strip()
+                        start_line = int(str(suggestion.get('start_line', 0)).strip())
+                        end_line = int(str(suggestion.get('end_line', 0)).strip())
+
+                        if git_provider:
+                            reference_link = git_provider.get_line_link(relevant_file, start_line, end_line)
+                        else:
+                            reference_link = None
+
+                        if gfm_supported:
+                            if reference_link is not None and len(reference_link) > 0:
+                                suggestion_str = f"<details><summary><a href='{reference_link}'><strong>{suggestion_header}</strong></a>\n\n{suggestion_content}\n</summary>\n\n"
+                            else:
+                                suggestion_str = f"<details><summary><strong>{suggestion_header}</strong>\n\n{suggestion_content}\n</summary>\n\n"
+                            
+                            if existing_code and improved_code:
+                                suggestion_str += f"**Existing code:**\n```\n{existing_code}\n```\n\n"
+                                suggestion_str += f"**Improved code:**\n```\n{improved_code}\n```\n\n"
+                            
+                            suggestion_str += "</details>"
+                        else:
+                            if reference_link is not None and len(reference_link) > 0:
+                                suggestion_str = f"[**{suggestion_header}**]({reference_link})\n\n{suggestion_content}\n\n"
+                            else:
+                                suggestion_str = f"**{suggestion_header}**\n\n{suggestion_content}\n\n"
+                            
+                            if existing_code and improved_code:
+                                suggestion_str += f"**Existing code:**\n```\n{existing_code}\n```\n\n"
+                                suggestion_str += f"**Improved code:**\n```\n{improved_code}\n```\n\n"
+                        
+                        markdown_text += f"{suggestion_str}\n\n"
+                    except Exception as e:
+                        get_logger().exception(f"Failed to process code suggestion: {e}")
+                if gfm_supported:
+                    markdown_text += f"</td></tr>\n"
         else:
             if gfm_supported:
                 markdown_text += f"<tr><td>"

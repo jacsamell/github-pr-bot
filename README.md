@@ -1,259 +1,174 @@
-<div align="center">
+# AI-Powered PR Bot
 
-<div align="center">
+🤖 Intelligent pull request analysis, review, and auto-approval using Claude AI
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://www.qodo.ai/wp-content/uploads/2025/02/PR-Agent-Purple-2.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://www.qodo.ai/wp-content/uploads/2025/02/PR-Agent-Purple-2.png">
-  <img src="https://codium.ai/images/pr_agent/logo-light.png" alt="logo" width="330">
+[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-AI--Powered%20PR%20Bot-blue.svg?colorA=24292e&colorB=0366d6&style=flat&longCache=true&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAM6wAADOsB5dZE0gAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAERSURBVCiRhZG/SsMxFEZPfsVJ61jbxaF0cRQRcRJ9hlYn30IHN/+9iquDCOIsblIrOjqKgy5aKoJQj4n3EX8DY7ECnEMOeQf+c9/hGtlRsuUiEd3yAAYA4Dr4++2q7dMFNE7dmNBKY0BSk5sehqPfekNzKG0+Qi3GG734+O3zwVwpPy2s2HnP+p7Xh8+dSoGg2XrTg/HcNTDajqHoDdDqNLAqFwTjZm56UCEk6dSBRqDGYSUOu66Zg+I2fNZs/M3/f/Grl/XnyF1Gw3VKCez0PN5IUfFLqvgUN4C0qNqYs5YhPL+aVZYDE4IpUk57oSFnJm4FyCqqOE0jhY2SMyLFoo56zyo6becOS5UVDdj7Vih0zp+tcMhwRpBeLyqtIjlJBFdqyoJuAn9MSL9CCVpkTx/9qAAAAABJRU5ErkJggg==)](https://github.com/marketplace/actions/ai-powered-pr-bot)
 
-</picture>
-<br/>
+Transform your pull request workflow with AI-powered automation that provides intelligent code reviews, generates comprehensive descriptions, and safely auto-approves quality changes.
 
-[Installation Guide](https://qodo-merge-docs.qodo.ai/installation/) |
-[Usage Guide](https://qodo-merge-docs.qodo.ai/usage-guide/) |
-[Tools Guide](https://qodo-merge-docs.qodo.ai/tools/) |
-[Qodo Merge](https://qodo-merge-docs.qodo.ai/overview/pr_agent_pro/) 💎
+> **License Notice:** Modified version of [PR-Agent](https://github.com/Codium-ai/pr-agent) by Codium AI, licensed under AGPL v3. [Source code available here](https://github.com/jacsamell/github-pr-bot).
 
-PR-Agent aims to help efficiently review and handle pull requests, by providing AI feedback and suggestions
-</div>
+## Features
 
-[![Static Badge](https://img.shields.io/badge/Chrome-Extension-violet)](https://chromewebstore.google.com/detail/qodo-merge-ai-powered-cod/ephlnjeghhogofkifjloamocljapahnl)
-[![Static Badge](https://img.shields.io/badge/Pro-App-blue)](https://github.com/apps/qodo-merge-pro/)
-[![Static Badge](https://img.shields.io/badge/OpenSource-App-red)](https://github.com/apps/qodo-merge-pro-for-open-source/)
-[![Discord](https://badgen.net/badge/icon/discord?icon=discord&label&color=purple)](https://discord.com/invite/SgSxuQ65GF)
-<a href="https://github.com/Codium-ai/pr-agent/commits/main">
-<img alt="GitHub" src="https://img.shields.io/github/last-commit/Codium-ai/pr-agent/main?style=for-the-badge" height="20">
-</a>
-</div>
+- **Auto Description** - Generates PR titles, summaries, and labels
+- **Auto Review** - Provides detailed code feedback and security analysis  
+- **Code Suggestions** - Offers specific improvements and best practices
+- **Auto Approval** - Safely approves PRs that meet quality criteria
+- **Smart Triggers** - Runs on PR events or manual `##prbot` trigger
 
-## Table of Contents
+## 🚀 Quick Setup
 
-- [News and Updates](#news-and-updates)
-- [Overview](#overview)
-- [Example results](#example-results)
-- [Try it now](#try-it-now)
-- [Qodo Merge](https://qodo-merge-docs.qodo.ai/overview/pr_agent_pro/)
-- [How it works](#how-it-works)
-- [Why use PR-Agent?](#why-use-pr-agent)
-- [Data privacy](#data-privacy)
-- [Contributing](#contributing)
-- [Links](#links)
+### Basic Usage
 
-## News and Updates
+```yaml
+name: AI PR Bot
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, synchronize]
 
-## May 17, 2025
-
-- v0.29 was [released](https://github.com/qodo-ai/pr-agent/releases)
-- `Qodo Merge Pull Request Benchmark` was [released](https://qodo-merge-docs.qodo.ai/pr_benchmark/). This benchmark  evaluates and compares the performance of LLMs in analyzing pull request code.
-- `Recent Updates and Future Roadmap` page was added to the [Qodo Merge Docs](https://qodo-merge-docs.qodo.ai/recent_updates/)
-
-## Apr 30, 2025
-
-A new feature is now available in the `/improve` tool for Qodo Merge 💎 - Chat on code suggestions.
-
-<img width="512" alt="image" src="https://codium.ai/images/pr_agent/improve_chat_on_code_suggestions_ask.png" />
-
-Read more about it [here](https://qodo-merge-docs.qodo.ai/tools/improve/#chat-on-code-suggestions).
-
-## Apr 16, 2025
-
-New tool for Qodo Merge 💎 - `/scan_repo_discussions`.
-
-<img width="635" alt="image" src="https://codium.ai/images/pr_agent/scan_repo_discussions_2.png" />
-
-Read more about it [here](https://qodo-merge-docs.qodo.ai/tools/scan_repo_discussions/).
-
-## Overview
-
-<div style="text-align:left;">
-
-Supported commands per platform:
-
-|       |                                                                                                         | GitHub | GitLab | Bitbucket | Azure DevOps |
-| ----- |---------------------------------------------------------------------------------------------------------|:------:|:------:|:---------:|:------------:|
-| TOOLS | [Review](https://qodo-merge-docs.qodo.ai/tools/review/)                                                 |   ✅   |   ✅   |    ✅     |      ✅      |
-|       | [Describe](https://qodo-merge-docs.qodo.ai/tools/describe/)                                             |   ✅   |   ✅   |    ✅     |      ✅      |
-|       | [Improve](https://qodo-merge-docs.qodo.ai/tools/improve/)                                               |   ✅   |   ✅   |    ✅     |      ✅      |
-|       | [Ask](https://qodo-merge-docs.qodo.ai/tools/ask/)                                                       |   ✅   |   ✅   |    ✅     |      ✅      |
-|       | ⮑ [Ask on code lines](https://qodo-merge-docs.qodo.ai/tools/ask/#ask-lines)                             |   ✅   |   ✅   |           |              |
-|       | [Update CHANGELOG](https://qodo-merge-docs.qodo.ai/tools/update_changelog/)                             |   ✅   |   ✅   |    ✅     |      ✅      |
-|       | [Help Docs](https://qodo-merge-docs.qodo.ai/tools/help_docs/?h=auto#auto-approval)                      |   ✅   |   ✅   |    ✅     |              |
-|       | [Ticket Context](https://qodo-merge-docs.qodo.ai/core-abilities/fetching_ticket_context/) 💎            |   ✅   |   ✅   |    ✅     |              |
-|       | [Utilizing Best Practices](https://qodo-merge-docs.qodo.ai/tools/improve/#best-practices) 💎            |   ✅   |   ✅   |    ✅     |              |
-|       | [PR Chat](https://qodo-merge-docs.qodo.ai/chrome-extension/features/#pr-chat) 💎                        |   ✅   |        |           |              |
-|       | [Suggestion Tracking](https://qodo-merge-docs.qodo.ai/tools/improve/#suggestion-tracking) 💎            |   ✅   |   ✅   |           |              |
-|       | [CI Feedback](https://qodo-merge-docs.qodo.ai/tools/ci_feedback/) 💎                                    |   ✅   |        |           |              |
-|       | [PR Documentation](https://qodo-merge-docs.qodo.ai/tools/documentation/) 💎                             |   ✅   |   ✅   |           |              |
-|       | [Custom Labels](https://qodo-merge-docs.qodo.ai/tools/custom_labels/) 💎                                |   ✅   |   ✅   |           |              |
-|       | [Analyze](https://qodo-merge-docs.qodo.ai/tools/analyze/) 💎                                            |   ✅   |   ✅   |           |              |
-|       | [Similar Code](https://qodo-merge-docs.qodo.ai/tools/similar_code/) 💎                                  |   ✅   |        |           |              |
-|       | [Custom Prompt](https://qodo-merge-docs.qodo.ai/tools/custom_prompt/) 💎                                |   ✅   |   ✅   |    ✅     |              |
-|       | [Test](https://qodo-merge-docs.qodo.ai/tools/test/) 💎                                                  |   ✅   |   ✅   |           |              |
-|       | [Implement](https://qodo-merge-docs.qodo.ai/tools/implement/) 💎                                        |   ✅   |   ✅   |    ✅     |              |
-|       | [Scan Repo Discussions](https://qodo-merge-docs.qodo.ai/tools/scan_repo_discussions/) 💎                |   ✅   |        |           |              |
-|       | [Auto-Approve](https://qodo-merge-docs.qodo.ai/tools/improve/?h=auto#auto-approval) 💎                  |   ✅   |   ✅   |    ✅     |              |
-|       |                                                                                                         |        |        |           |              |
-| USAGE | [CLI](https://qodo-merge-docs.qodo.ai/usage-guide/automations_and_usage/#local-repo-cli)                |   ✅   |   ✅   |    ✅     |      ✅      |
-|       | [App / webhook](https://qodo-merge-docs.qodo.ai/usage-guide/automations_and_usage/#github-app)          |   ✅   |   ✅   |    ✅     |      ✅      |
-|       | [Tagging bot](https://github.com/Codium-ai/pr-agent#try-it-now)                                         |   ✅   |        |           |              |
-|       | [Actions](https://qodo-merge-docs.qodo.ai/installation/github/#run-as-a-github-action)                  |   ✅   |   ✅   |    ✅     |      ✅      |
-|       |                                                                                                         |        |        |           |              |
-| CORE  | [PR compression](https://qodo-merge-docs.qodo.ai/core-abilities/compression_strategy/)                  |   ✅   |   ✅   |    ✅     |      ✅      |
-|       | Adaptive and token-aware file patch fitting                                                             |   ✅   |   ✅   |    ✅     |      ✅      |
-|       | [Multiple models support](https://qodo-merge-docs.qodo.ai/usage-guide/changing_a_model/)                |   ✅   |   ✅   |    ✅     |      ✅      |
-|       | [Local and global metadata](https://qodo-merge-docs.qodo.ai/core-abilities/metadata/)                   |   ✅   |   ✅   |    ✅     |      ✅      |
-|       | [Dynamic context](https://qodo-merge-docs.qodo.ai/core-abilities/dynamic_context/)                      |   ✅   |   ✅   |    ✅     |      ✅      |
-|       | [Self reflection](https://qodo-merge-docs.qodo.ai/core-abilities/self_reflection/)                      |   ✅   |   ✅   |    ✅     |      ✅      |
-|       | [Static code analysis](https://qodo-merge-docs.qodo.ai/core-abilities/static_code_analysis/) 💎         |   ✅   |   ✅   |           |              |
-|       | [Global and wiki configurations](https://qodo-merge-docs.qodo.ai/usage-guide/configuration_options/) 💎 |   ✅   |   ✅   |    ✅     |              |
-|       | [PR interactive actions](https://www.qodo.ai/images/pr_agent/pr-actions.mp4) 💎                         |   ✅   |   ✅   |           |              |
-|       | [Impact Evaluation](https://qodo-merge-docs.qodo.ai/core-abilities/impact_evaluation/) 💎               |   ✅   |   ✅   |           |              |
-|       | [Code Validation 💎](https://qodo-merge-docs.qodo.ai/core-abilities/code_validation/)                   |   ✅   |   ✅   |    ✅     |      ✅      |
-|       | [Auto Best Practices 💎](https://qodo-merge-docs.qodo.ai/core-abilities/auto_best_practices/)                     |   ✅   |      |         |            |
-- 💎 means this feature is available only in [Qodo Merge](https://www.qodo.ai/pricing/)
-
-[//]: # (- Support for additional git providers is described in [here]&#40;./docs/Full_environments.md&#41;)
-___
-
-‣ **Auto Description ([`/describe`](https://qodo-merge-docs.qodo.ai/tools/describe/))**: Automatically generating PR description - title, type, summary, code walkthrough and labels.
-\
-‣ **Auto Review ([`/review`](https://qodo-merge-docs.qodo.ai/tools/review/))**: Adjustable feedback about the PR, possible issues, security concerns, review effort and more.
-\
-‣ **Code Suggestions ([`/improve`](https://qodo-merge-docs.qodo.ai/tools/improve/))**: Code suggestions for improving the PR.
-\
-‣ **Question Answering ([`/ask ...`](https://qodo-merge-docs.qodo.ai/tools/ask/))**: Answering free-text questions about the PR.
-\
-‣ **Update Changelog ([`/update_changelog`](https://qodo-merge-docs.qodo.ai/tools/update_changelog/))**: Automatically updating the CHANGELOG.md file with the PR changes.
-\
-‣ **Help Docs ([`/help_docs`](https://qodo-merge-docs.qodo.ai/tools/help_docs/))**: Answers a question on any repository by utilizing given documentation.
-\
-‣ **Add Documentation 💎  ([`/add_docs`](https://qodo-merge-docs.qodo.ai/tools/documentation/))**: Generates documentation to methods/functions/classes that changed in the PR.
-\
-‣ **Generate Custom Labels 💎 ([`/generate_labels`](https://qodo-merge-docs.qodo.ai/tools/custom_labels/))**: Generates custom labels for the PR, based on specific guidelines defined by the user.
-\
-‣ **Analyze 💎 ([`/analyze`](https://qodo-merge-docs.qodo.ai/tools/analyze/))**: Identify code components that changed in the PR, and enables to interactively generate tests, docs, and code suggestions for each component.
-\
-‣ **Test 💎 ([`/test`](https://qodo-merge-docs.qodo.ai/tools/test/))**: Generate tests for a selected component, based on the PR code changes.
-\
-‣ **Custom Prompt 💎 ([`/custom_prompt`](https://qodo-merge-docs.qodo.ai/tools/custom_prompt/))**: Automatically generates custom suggestions for improving the PR code, based on specific guidelines defined by the user.
-\
-‣ **Generate Tests 💎 ([`/test component_name`](https://qodo-merge-docs.qodo.ai/tools/test/))**: Generates unit tests for a selected component, based on the PR code changes.
-\
-‣ **CI Feedback 💎 ([`/checks ci_job`](https://qodo-merge-docs.qodo.ai/tools/ci_feedback/))**: Automatically generates feedback and analysis for a failed CI job.
-\
-‣ **Similar Code 💎 ([`/find_similar_component`](https://qodo-merge-docs.qodo.ai/tools/similar_code/))**: Retrieves the most similar code components from inside the organization's codebase, or from open-source code.
-\
-‣ **Implement 💎 ([`/implement`](https://qodo-merge-docs.qodo.ai/tools/implement/))**: Generates implementation code from review suggestions.
-___
-
-## Example results
-
-</div>
-<h4><a href="https://github.com/Codium-ai/pr-agent/pull/530">/describe</a></h4>
-<div align="center">
-<p float="center">
-<img src="https://www.codium.ai/images/pr_agent/describe_new_short_main.png" width="512">
-</p>
-</div>
-<hr>
-
-<h4><a href="https://github.com/Codium-ai/pr-agent/pull/732#issuecomment-1975099151">/review</a></h4>
-<div align="center">
-<p float="center">
-<kbd>
-<img src="https://www.codium.ai/images/pr_agent/review_new_short_main.png" width="512">
-</kbd>
-</p>
-</div>
-<hr>
-
-<h4><a href="https://github.com/Codium-ai/pr-agent/pull/732#issuecomment-1975099159">/improve</a></h4>
-<div align="center">
-<p float="center">
-<kbd>
-<img src="https://www.codium.ai/images/pr_agent/improve_new_short_main.png" width="512">
-</kbd>
-</p>
-</div>
-
-<div align="left">
-
-</div>
-<hr>
-
-## Try it now
-
-Try the Claude Sonnet powered PR-Agent instantly on _your public GitHub repository_. Just mention `@CodiumAI-Agent` and add the desired command in any PR comment. The agent will generate a response based on your command.
-For example, add a comment to any pull request with the following text:
-
-```
-@CodiumAI-Agent /review
+jobs:
+  ai-pr-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: jacsamell/github-pr-bot@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          auto_review: true
+          auto_describe: true
+          enable_auto_approval: false
 ```
 
-and the agent will respond with a review of your PR.
+### Advanced Configuration
 
-Note that this is a promotional bot, suitable only for initial experimentation.
-It does not have 'edit' access to your repo, for example, so it cannot update the PR description or add labels (`@CodiumAI-Agent /describe` will publish PR description as a comment). In addition, the bot cannot be used on private repositories, as it does not have access to the files there.
+```yaml
+name: AI PR Bot
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, synchronize]
 
----
+jobs:
+  ai-pr-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: jacsamell/github-pr-bot@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          auto_review: true
+          auto_describe: true
+          auto_improve: true
+          enable_auto_approval: true
+          model: 'anthropic/claude-sonnet-4-20250514'
+          max_model_tokens: '100000'
+          require_trigger: false
+```
 
-## Qodo Merge 💎
+### Required Secrets
 
-[Qodo Merge](https://www.qodo.ai/pricing/) is a hosted version of PR-Agent, provided by Qodo. It is available for a monthly fee, and provides the following benefits:
+Add these secrets in your repository settings (Settings → Secrets and variables → Actions):
 
-1. **Fully managed** - We take care of everything for you - hosting, models, regular updates, and more. Installation is as simple as signing up and adding the Qodo Merge app to your GitHub/GitLab/BitBucket repo.
-2. **Improved privacy** - No data will be stored or used to train models. Qodo Merge will employ zero data retention, and will use an OpenAI account with zero data retention.
-3. **Improved support** - Qodo Merge users will receive priority support, and will be able to request new features and capabilities.
-4. **Extra features** - In addition to the benefits listed above, Qodo Merge will emphasize more customization, and the usage of static code analysis, in addition to LLM logic, to improve results.
-See [here](https://qodo-merge-docs.qodo.ai/overview/pr_agent_pro/) for a list of features available in Qodo Merge.
+| Secret | Description | Required |
+|--------|-------------|----------|
+| `ANTHROPIC_API_KEY` | Your Claude API key from Anthropic | ✅ Yes |
 
-## How it works
+## 📋 Inputs
 
-The following diagram illustrates PR-Agent tools and their flow:
+| Input | Description | Required | Default |
+|-------|-------------|----------|---------|
+| `anthropic_api_key` | Anthropic API key for Claude AI | ✅ Yes | - |
+| `github_token` | GitHub token for API access | ❌ No | `${{ github.token }}` |
+| `auto_review` | Enable automatic code review | ❌ No | `true` |
+| `auto_describe` | Enable automatic PR description generation | ❌ No | `true` |
+| `auto_improve` | Enable code improvement suggestions | ❌ No | `true` |
+| `enable_auto_approval` | Enable automatic approval of safe changes | ❌ No | `false` |
+| `model` | AI model to use | ❌ No | `anthropic/claude-sonnet-4-20250514` |
+| `max_model_tokens` | Maximum tokens for AI model | ❌ No | `100000` |
+| `require_trigger` | Require ##prbot trigger in PR description | ❌ No | `false` |
 
-![PR-Agent Tools](https://www.qodo.ai/images/pr_agent/diagram-v0.9.png)
+## 📤 Outputs
 
-Check out the [PR Compression strategy](https://qodo-merge-docs.qodo.ai/core-abilities/#pr-compression-strategy) page for more details on how we convert a code diff to a manageable LLM prompt
+| Output | Description |
+|--------|-------------|
+| `review_posted` | Whether a review was posted |
+| `description_updated` | Whether PR description was updated |
+| `improvements_posted` | Whether improvement suggestions were posted |
+| `auto_approved` | Whether PR was automatically approved |
 
-## Why use PR-Agent?
+### Optional Configuration File
 
-A reasonable question that can be asked is: `"Why use PR-Agent? What makes it stand out from existing tools?"`
+Create `.pr_bot.toml`:
 
-Here are some advantages of PR-Agent:
+```toml
+[config]
+model = "anthropic/claude-sonnet-4-20250514"
+enable_auto_approval = true
+max_model_tokens = 100000
 
-- We emphasize **real-life practical usage**. Each tool (review, improve, ask, ...) has a single LLM call, no more. We feel that this is critical for realistic team usage - obtaining an answer quickly (~30 seconds) and affordably.
-- Our [PR Compression strategy](https://qodo-merge-docs.qodo.ai/core-abilities/#pr-compression-strategy)  is a core ability that enables to effectively tackle both short and long PRs.
-- Our JSON prompting strategy enables to have **modular, customizable tools**. For example, the '/review' tool categories can be controlled via the [configuration](pr_agent/settings/configuration.toml) file. Adding additional categories is easy and accessible.
-- We support **multiple git providers** (GitHub, GitLab, BitBucket), **multiple ways** to use the tool (CLI, GitHub Action, GitHub App, Docker, ...), and **multiple models** (GPT, Claude, Deepseek, ...)
+[github_action_config]
+require_aidesc_trigger = true  # Requires ##prbot in PR description
+auto_describe = true
+auto_review = true
+auto_improve = true
+```
 
-## Data privacy
+## Usage
 
-### Self-hosted PR-Agent
+### Automatic Mode
+- Runs on all PRs (default)
+- Or add `##prbot` to PR description if `require_aidesc_trigger = true`
 
-- If you host PR-Agent with your OpenAI API key, it is between you and OpenAI. You can read their API data privacy policy here:
-https://openai.com/enterprise-privacy
+### Manual Commands
+- `/review` - Get code review
+- `/describe` - Generate PR description  
+- `/improve` - Get code suggestions
 
-### Qodo-hosted Qodo Merge 💎
+## Auto-Approval
 
-- When using Qodo Merge 💎, hosted by Qodo, we will not store any of your data, nor will we use it for training. You will also benefit from an OpenAI account with zero data retention.
+Automatically approves safe changes:
+- ✅ Documentation updates, tests, minor refactoring
+- ❌ Critical business logic, security code, database changes
 
-- For certain clients, Qodo-hosted Qodo Merge will use Qodo’s proprietary models — if this is the case, you will be notified.
+## 🔒 Security & Privacy
 
-- No passive collection of Code and Pull Requests’ data — Qodo Merge will be active only when you invoke it, and it will then extract and analyze only data relevant to the executed command and queried pull request.
+- **API Keys**: Your Anthropic API key is securely handled through GitHub Secrets
+- **Code Privacy**: Code is only sent to Anthropic's Claude API for analysis
+- **No Storage**: No code or data is permanently stored by this action
+- **Permissions**: Only requires standard GitHub token permissions for PR operations
 
-### Qodo Merge Chrome extension
+## 🤝 Contributing
 
-- The [Qodo Merge Chrome extension](https://chromewebstore.google.com/detail/qodo-merge-ai-powered-cod/ephlnjeghhogofkifjloamocljapahnl) serves solely to modify the visual appearance of a GitHub PR screen. It does not transmit any user's repo or pull request code. Code is only sent for processing when a user submits a GitHub comment that activates a PR-Agent tool, in accordance with the standard privacy policy of Qodo-Merge.
+Contributions are welcome! This project is based on [PR-Agent](https://github.com/Codium-ai/pr-agent) and maintains AGPL v3 licensing.
 
-## Contributing
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-To contribute to the project, get started by reading our [Contributing Guide](https://github.com/qodo-ai/pr-agent/blob/b09eec265ef7d36c232063f76553efb6b53979ff/CONTRIBUTING.md).
+## 📄 License
 
-## Links
+This project is licensed under AGPL v3 - see the [LICENSE](LICENSE) file for details.
 
-- Discord community: https://discord.gg/kG35uSHDBc
-- Qodo site: https://www.qodo.ai/
-- Blog: https://www.qodo.ai/blog/
-- Troubleshooting: https://www.qodo.ai/blog/technical-faq-and-troubleshooting/
-- Support: support@qodo.ai
+Based on [PR-Agent](https://github.com/Codium-ai/pr-agent) by Codium AI.
+
+## 🆘 Support
+
+- 📖 [Documentation](https://github.com/jacsamell/github-pr-bot)
+- 🐛 [Report Issues](https://github.com/jacsamell/github-pr-bot/issues)
+- 💬 [Discussions](https://github.com/jacsamell/github-pr-bot/discussions)
+
+## Development
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Set environment variables
+export ANTHROPIC__KEY="your-api-key"
+export GITHUB_TOKEN="your-github-token"
+
+# Run on a specific PR
+python -m pr_agent.cli --pr_url=https://github.com/owner/repo/pull/123 review
+```
+
+

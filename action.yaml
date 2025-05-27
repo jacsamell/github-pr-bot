@@ -1,8 +1,68 @@
-name: 'Codium PR Agent'
-description: 'Summarize, review and suggest improvements for pull requests'
+name: 'AI-Powered PR Bot'
+description: 'Automated PR analysis, review, and approval using Claude AI. Generates descriptions, provides code feedback, and safely auto-approves quality PRs.'
+author: 'jacsamell'
+
+inputs:
+  anthropic_api_key:
+    description: 'Anthropic API key for Claude AI'
+    required: true
+  github_token:
+    description: 'GitHub token for API access'
+    required: false
+    default: ${{ github.token }}
+  auto_review:
+    description: 'Enable automatic code review'
+    required: false
+    default: 'true'
+  auto_describe:
+    description: 'Enable automatic PR description generation'
+    required: false
+    default: 'true'
+  auto_improve:
+    description: 'Enable code improvement suggestions'
+    required: false
+    default: 'true'
+  enable_auto_approval:
+    description: 'Enable automatic approval of safe changes'
+    required: false
+    default: 'false'
+  model:
+    description: 'AI model to use (e.g., anthropic/claude-sonnet-4-20250514)'
+    required: false
+    default: 'anthropic/claude-sonnet-4-20250514'
+  max_model_tokens:
+    description: 'Maximum tokens for AI model'
+    required: false
+    default: '100000'
+  require_trigger:
+    description: 'Require ##prbot trigger in PR description'
+    required: false
+    default: 'false'
+
+outputs:
+  review_posted:
+    description: 'Whether a review was posted'
+  description_updated:
+    description: 'Whether PR description was updated'
+  improvements_posted:
+    description: 'Whether improvement suggestions were posted'
+  auto_approved:
+    description: 'Whether PR was automatically approved'
+
 branding:
-  icon: 'award'
-  color: 'green'
+  icon: 'git-pull-request'
+  color: 'blue'
+
 runs:
   using: 'docker'
-  image: 'Dockerfile.github_action_dockerhub'
+  image: 'Dockerfile.github_action'
+  env:
+    ANTHROPIC__KEY: ${{ inputs.anthropic_api_key }}
+    GITHUB_TOKEN: ${{ inputs.github_token }}
+    CONFIG__AUTO_REVIEW: ${{ inputs.auto_review }}
+    CONFIG__AUTO_DESCRIBE: ${{ inputs.auto_describe }}
+    CONFIG__AUTO_IMPROVE: ${{ inputs.auto_improve }}
+    CONFIG__ENABLE_AUTO_APPROVAL: ${{ inputs.enable_auto_approval }}
+    CONFIG__MODEL: ${{ inputs.model }}
+    CONFIG__MAX_MODEL_TOKENS: ${{ inputs.max_model_tokens }}
+    CONFIG__REQUIRE_AIDESC_TRIGGER: ${{ inputs.require_trigger }}

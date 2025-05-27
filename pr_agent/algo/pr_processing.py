@@ -40,7 +40,8 @@ def get_pr_diff(git_provider: GitProvider, token_handler: TokenHandler,
                 add_line_numbers_to_hunks: bool = False,
                 disable_extra_lines: bool = False,
                 large_pr_handling=False,
-                return_remaining_files=False):
+                return_remaining_files=False,
+                return_pruning_info=False):
     if disable_extra_lines:
         PATCH_EXTRA_LINES_BEFORE = 0
         PATCH_EXTRA_LINES_AFTER = 0
@@ -73,7 +74,10 @@ def get_pr_diff(git_provider: GitProvider, token_handler: TokenHandler,
     if total_tokens + OUTPUT_BUFFER_TOKENS_SOFT_THRESHOLD < get_max_tokens(model):
         get_logger().info(f"Tokens: {total_tokens}, total tokens under limit: {get_max_tokens(model)}, "
                           f"returning full diff.")
-        return "\n".join(patches_extended)
+        patches = "\n".join(patches_extended)
+        if return_pruning_info:
+            return patches, False  # No pruning occurred
+        return patches
 
     # if we are over the limit, start pruning (If we got here, we will not extend the patches with extra lines)
     get_logger().info(f"Tokens: {total_tokens}, total tokens over limit: {get_max_tokens(model)}, "
@@ -83,6 +87,8 @@ def get_pr_diff(git_provider: GitProvider, token_handler: TokenHandler,
 
     if large_pr_handling and len(patches_compressed_list) > 1:
         get_logger().info(f"Large PR handling mode, and found {len(patches_compressed_list)} patches with original diff.")
+        if return_pruning_info:
+            return "", True  # Large PR handling with pruning
         return "" # return empty string, as we want to generate multiple patches with a different prompt
 
     # return the first patch
@@ -136,7 +142,11 @@ def get_pr_diff(git_provider: GitProvider, token_handler: TokenHandler,
 
     get_logger().debug(f"After pruning, added_list_str: {added_list_str}, modified_list_str: {modified_list_str}, "
                        f"deleted_list_str: {deleted_list_str}")
-    if not return_remaining_files:
+    if return_pruning_info and not return_remaining_files:
+        return final_diff, True  # Pruning occurred
+    elif return_pruning_info and return_remaining_files:
+        return final_diff, remaining_files_list, True  # Pruning occurred
+    elif not return_remaining_files:
         return final_diff
     else:
         return final_diff, remaining_files_list

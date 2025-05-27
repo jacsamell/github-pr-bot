@@ -1,11 +1,12 @@
 from os.path import abspath, dirname, join
 from pathlib import Path
 from typing import Optional
+import os
 
 from dynaconf import Dynaconf
 from starlette_context import context
 
-PR_AGENT_TOML_KEY = 'pr-agent'
+PR_AGENT_TOML_KEY = 'pr-bot'
 
 current_dir = dirname(abspath(__file__))
 global_settings = Dynaconf(
@@ -81,3 +82,7 @@ def _find_pyproject() -> Optional[Path]:
 pyproject_path = _find_pyproject()
 if pyproject_path is not None:
     get_settings().load_file(pyproject_path, env=f'tool.{PR_AGENT_TOML_KEY}')
+
+# Support GITHUB_TOKEN as an alternative to GITHUB__USER_TOKEN
+if os.environ.get('GITHUB_TOKEN') and not os.environ.get('GITHUB__USER_TOKEN'):
+    get_settings().set('github.user_token', os.environ['GITHUB_TOKEN'])

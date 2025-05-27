@@ -1,0 +1,19 @@
+# Production GitHub PR Bot Configuration
+
+[config]
+# Use Claude Sonnet 4 for optimal PR review performance
+model = "anthropic/claude-sonnet-4-20250514"
+fallback_models = []
+
+[github_action_config]
+# Require ##prbot trigger in PR description to activate GitHub PR Bot
+# Note: The setting name is still "require_aidesc_trigger" for compatibility
+require_aidesc_trigger = true
+
+# Auto-run all PR tools by default (can be overridden per repo)
+auto_describe = true
+auto_review = true
+auto_improve = true
+
+# Enable output for GitHub Actions
+enable_output = true

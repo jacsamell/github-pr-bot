@@ -166,6 +166,8 @@ async def handle_push_trigger_for_new_commits(body: Dict[str, Any],
     if get_settings().github_app.push_trigger_ignore_merge_commits and after_sha == merge_commit_sha:
         return {}
 
+
+
     # Prevent triggering multiple times for subsequent push triggers when one is enough:
     # The first push will trigger the processing, and if there's a second push in the meanwhile it will wait.
     # Any more events will be discarded, because they will all trigger the exact same processing on the PR.
@@ -250,6 +252,7 @@ def is_bot_user(sender, sender_type):
     return False
 
 
+
 def should_process_pr_logic(body) -> bool:
     try:
         pull_request = body.get("pull_request", {})
@@ -322,6 +325,16 @@ async def handle_request(body: Dict[str, Any], event: str):
     if not action:
         get_logger().debug(f"No action found in request body, exiting handle_request")
         return {}
+    
+    # Filter out non-code-changing PR events early
+    if event == "pull_request":
+        # Get configured PR actions plus synchronize (push trigger)
+        handle_pr_actions = get_settings().get("github_app.handle_pr_actions", ['opened', 'reopened', 'ready_for_review'])
+        allowed_actions = handle_pr_actions + ["synchronize"]  # Always allow synchronize for push triggers
+        if action not in allowed_actions:
+            get_logger().debug(f"Ignoring non-configured PR event: {event=} {action=} (allowed: {allowed_actions})")
+            return {}
+    
     agent = PRAgent()
     log_context, sender, sender_id, sender_type = get_log_context(body, event, action, build_number)
 
@@ -384,7 +397,15 @@ def _check_pull_request_event(action: str, body: dict, log_context: dict) -> Tup
     if not api_url:
         return invalid_result
     log_context["api_url"] = api_url
-    if pull_request.get("draft", True) or pull_request.get("state") != "open":
+    
+    # Check if PR is draft and if we should process draft PRs
+    is_draft = pull_request.get("draft", False)
+    feedback_on_draft_pr = get_settings().get("CONFIG.FEEDBACK_ON_DRAFT_PR", False)
+    if is_draft and not feedback_on_draft_pr:
+        get_logger().info(f"Ignoring draft PR {api_url=} (set feedback_on_draft_pr=true to process draft PRs)")
+        return invalid_result
+    
+    if pull_request.get("state") != "open":
         return invalid_result
     if action in ("review_requested", "synchronize") and pull_request.get("created_at") == pull_request.get("updated_at"):
         # avoid double reviews when opening a PR for the first time

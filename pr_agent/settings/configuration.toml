@@ -6,8 +6,8 @@
 
 [config]
 # models
-model="o4-mini"
-fallback_models=["gpt-4.1"]
+model="anthropic/claude-sonnet-4-20250514"
+fallback_models=[]
 #model_reasoning="o4-mini" # dedictated reasoning model for self-reflection
 #model_weak="gpt-4o" # optional, a weaker model to use for some easier tasks
 # CLI
@@ -16,8 +16,9 @@ publish_output=true
 publish_output_progress=true
 verbosity_level=0 # 0,1,2
 use_extra_bad_extensions=false
+dry_run=false # when true, print comments to console instead of posting to GitHub
 # Log
-log_level="DEBUG"
+log_level="INFO"
 # Configurations
 use_wiki_settings_file=true
 use_repo_settings_file=true
@@ -30,7 +31,7 @@ response_language="en-US" # Language locales code for PR responses in ISO 3166 a
 # token limits
 max_description_tokens = 500
 max_commits_tokens = 500
-max_model_tokens = 32000 # Limits the maximum number of tokens that can be used by any model, regardless of the model's default capabilities.
+max_model_tokens = 100000 # Limits the maximum number of tokens that can be used by any model, regardless of the model's default capabilities.
 custom_model_max_tokens=-1 # for models not in the default list
 model_token_count_estimate_factor=0.3 # factor to increase the token count estimate, in order to reduce likelihood of model failure due to too many tokens - applicable only when requesting an accurate estimate.
 # patch extension logic
@@ -39,7 +40,6 @@ allow_dynamic_context=true
 max_extra_lines_before_dynamic_context = 10 # will try to include up to 10 extra lines before the hunk in the patch, until we reach an enclosing function or class
 patch_extra_lines_before = 5 # Number of extra lines (+3 default ones) to include before each hunk in the patch
 patch_extra_lines_after = 1 # Number of extra lines (+3 default ones) to include after each hunk in the patch
-secret_provider=""
 cli_mode=false
 ai_disclaimer_title=""  # Pro feature, title for a collapsible disclaimer to AI outputs
 ai_disclaimer=""  # Pro feature, full text for the AI disclaimer
@@ -50,7 +50,7 @@ duplicate_prompt_examples = false
 seed=-1 # set positive value to fix the seed (and ensure temperature=0)
 temperature=0.2
 # ignore logic
-ignore_pr_title = ["^\\[Auto\\]", "^Auto"] # a list of regular expressions to match against the PR title to ignore the PR agent
+ignore_pr_title = [] # a list of regular expressions to match against the PR title to ignore the PR agent
 ignore_pr_target_branches = [] # a list of regular expressions of target branches to ignore from PR agent when an PR is created
 ignore_pr_source_branches = [] # a list of regular expressions of source branches to ignore from PR agent when an PR is created
 ignore_pr_labels = [] # labels to ignore from PR agent when an PR is created
@@ -59,25 +59,24 @@ ignore_repositories = [] # a list of regular expressions of repository full name
 #
 is_auto_command = false # will be auto-set to true if the command is triggered by an automation
 enable_ai_metadata = false # will enable adding ai metadata
-reasoning_effort = "medium" # "low", "medium", "high"
-# auto approval 💎
-enable_auto_approval=false # Set to true to enable auto-approval of PRs under certain conditions
-auto_approve_for_low_review_effort=-1 # -1 to disable, [1-5] to set the threshold for auto-approval
-auto_approve_for_no_suggestions=false # If true, the PR will be auto-approved if there are no suggestions
+reasoning_effort = "medium" # "low", "medium", "high" - for openai thinking only
+# auto approval
+enable_auto_approval=true # Set to true to enable auto-approval of PRs under certain conditions
+# Note: Auto-approval now uses AI-driven decision making with built-in safety thresholds
+# The AI analyzes confidence, complexity, security scores and makes intelligent decisions
 
-# Custom auto-approval thresholds
-auto_approve_confidence_threshold=85 # Minimum confidence score (1-100) required for auto-approval
-auto_approve_complexity_threshold=5 # Maximum complexity score (1-10) allowed for auto-approval  
-auto_approve_security_threshold=8 # Minimum security score (1-10) required for auto-approval
-auto_approve_effort_threshold=3 # Maximum effort score (1-5) allowed for auto-approval
-auto_approve_max_files=5 # Maximum number of files changed allowed for auto-approval
-auto_approve_max_lines=200 # Maximum total lines changed allowed for auto-approval
-auto_approve_max_issues=3 # Maximum number of issues allowed for auto-approval
+# ⚠️ DANGER: Force override for testing only - bypasses ALL safety checks!
+auto_approve_force_override=false # NEVER set to true in production! Only for testing/development
+
+# draft PR handling
+feedback_on_draft_pr=false # Set to true to enable processing of draft PRs
+
 # extended thinking for Claude reasoning models
-enable_claude_extended_thinking = false # Set to true to enable extended thinking feature
-extended_thinking_budget_tokens = 2048
-extended_thinking_max_output_tokens = 4096
+enable_claude_extended_thinking = true # Re-enabled with updated LiteLLM 1.71.1
+extended_thinking_budget_tokens = 16384  # Good balance of deep reasoning and PR size capacity
+extended_thinking_max_output_tokens = 20480  # Must be > budget_tokens (16384 + buffer)
 
+app_name = "github-pr-bot"
 
 [pr_reviewer] # /review #
 # enable/disable features
@@ -90,11 +89,11 @@ require_ticket_analysis_review=true
 # general options
 persistent_comment=true
 extra_instructions = ""
-num_max_findings = 3
-final_update_message = true
+num_max_findings = 5
+final_update_message = false
 # review labels
-enable_review_labels_security=true
-enable_review_labels_effort=true
+enable_review_labels_security=false
+enable_review_labels_effort=false
 # specific configurations for incremental review (/review -i)
 require_all_thresholds_for_incremental_review=false
 minimal_commits_for_incremental_review=0
@@ -109,7 +108,7 @@ generate_ai_title=false
 use_bullet_points=true
 extra_instructions = ""
 enable_pr_type=true
-final_update_message = true
+final_update_message = false
 enable_help_text=false
 enable_help_comment=true
 # describe as comment
@@ -135,7 +134,7 @@ use_conversation_history=true
 
 
 [pr_code_suggestions] # /improve #
-max_context_tokens=24000
+max_context_tokens=100000
 #
 commitable_code_suggestions = false
 dual_publishing_score_threshold=-1 # -1 to disable, [0-10] to set the threshold (>=) for publishing a code suggestion both in a table and as commitable
@@ -173,12 +172,7 @@ wiki_page_accepted_suggestions=true
 allow_thumbs_up_down=false
 
 [pr_custom_prompt] # /custom_prompt #
-prompt = """\
-The code suggestions should focus only on the following:
-- ...
-- ...
-...
-"""
+prompt = ""
 suggestions_score_threshold=0
 num_code_suggestions_per_chunk=3
 self_reflect_on_custom_suggestions=true
@@ -247,10 +241,11 @@ app_name = "pr-agent"
 ignore_bot_pr = true
 
 [github_action_config]
-# auto_review = true    # set as env var in .github/workflows/pr-agent.yaml
-# auto_describe = true  # set as env var in .github/workflows/pr-agent.yaml
-# auto_improve = true   # set as env var in .github/workflows/pr-agent.yaml
+# auto_review = true    # set as env var in .github/workflows/pr-bot.yaml
+# auto_describe = true  # set as env var in .github/workflows/pr-bot.yaml
+# auto_improve = true   # set as env var in .github/workflows/pr-bot.yaml
 # pr_actions = ['opened', 'reopened', 'ready_for_review', 'review_requested']
+# require_aidesc_trigger = false  # when true, GitHub PR Bot will only run if ##prbot is found in PR description
 
 [github_app]
 # these toggles allows running the github app from custom deployments
@@ -264,7 +259,7 @@ pr_commands = [
     "/improve",
 ]
 # settings for "pull_request" event with "synchronize" action - used to detect and handle push triggers for new commits
-handle_push_trigger = false
+handle_push_trigger = true
 push_trigger_ignore_bot_commits = true
 push_trigger_ignore_merge_commits = true
 push_trigger_wait_for_initial_review = true
@@ -342,11 +337,6 @@ search_from_org = false
 allow_fallback_less_words = true
 number_of_keywords = 5
 number_of_results = 5
-
-[pinecone]
-# fill and place in .secrets.toml
-#api_key = ...
-# environment = "gcp-starter"
 
 [lancedb]
 uri = "./lancedb"

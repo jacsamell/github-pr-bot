@@ -49,7 +49,7 @@ def setup_logger(level: str = "INFO", fmt: LoggingFormat = LoggingFormat.CONSOLE
     log_folder = get_settings().get("CONFIG.ANALYTICS_FOLDER", "")
     if log_folder:
         pid = os.getpid()
-        log_file = os.path.join(log_folder, f"pr-agent.{pid}.log")
+        log_file = os.path.join(log_folder, f"github-pr-bot.{pid}.log")
         logger.add(
             log_file,
             filter=analytics_filter,

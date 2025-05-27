@@ -1,49 +1,83 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pr-agent"
-version = "0.2.7"
-
-authors = [{ name = "QodoAI", email = "tal.r@qodo.ai" }]
-
+name = "github-pr-bot"
+version = "1.0.0"
+authors = [
+    {name = "Jacob Samell", email = "jacob@jacsamell.com"},
+]
 maintainers = [
-  { name = "Tal Ridnik", email = "tal.r@qodo.ai" },
+    {name = "Jacob Samell", email = "jacob@jacsamell.com"},
 ]
-
-description = "QodoAI PR-Agent aims to help efficiently review and handle pull requests, by providing AI feedbacks and suggestions."
+description = "GitHub PR Bot - Automated PR analysis, review, and approval using Claude AI. Modified version of PR-Agent."
 readme = "README.md"
-requires-python = ">=3.12"
-keywords = ["AI", "Agents", "Pull Request", "Automation", "Code Review"]
-license = "Apache-2.0"
-
+license = {text = "AGPL-3.0"}
+requires-python = ">=3.10"
 classifiers = [
-  "Intended Audience :: Developers",
-  "Programming Language :: Python :: 3",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Quality Assurance",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
-dynamic = ["dependencies"]
-
-
-[tool.setuptools.dynamic]
-dependencies = { file = ["requirements.txt"] }
+keywords = ["github", "pull-request", "code-review", "ai", "claude", "automation"]
+dependencies = [
+    "anthropic>=0.25.0",
+    "PyGithub>=1.59.0",
+    "pydantic>=2.0.0",
+    "pyyaml>=6.0",
+    "toml>=0.10.2",
+    "requests>=2.28.0",
+    "gitpython>=3.1.0",
+    "jinja2>=3.1.0",
+    "tiktoken>=0.4.0",
+]
 
 [project.urls]
-"Homepage" = "https://github.com/qodo-ai/pr-agent"
-"Documentation" = "https://qodo-merge-docs.qodo.ai/"
+"Homepage" = "https://github.com/jacsamell/github-pr-bot"
+"Bug Reports" = "https://github.com/jacsamell/github-pr-bot/issues"
+"Source" = "https://github.com/jacsamell/github-pr-bot"
 
-[tool.setuptools]
-include-package-data = true
-license-files = ["LICENSE"]
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]
+
+[project.scripts]
+github-pr-bot = "pr_agent.cli:run"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = [
-  "pr_agent*",
-] # include pr_agent and any sub-packages it finds under it.
+include = ["pr_agent*"]
 
-[project.scripts]
-pr-agent = "pr_agent.cli:run"
+[tool.setuptools.package-data]
+"pr_agent" = ["settings/*.toml", "settings/*.yaml"]
+
+[tool.black]
+line-length = 120
+target-version = ['py310']
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
 
 [tool.ruff]
 line-length = 120

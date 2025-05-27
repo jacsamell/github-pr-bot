@@ -1,0 +1,38 @@
+name: Test Action
+
+on:
+  pull_request:
+    paths:
+      - 'action.yaml'
+      - 'Dockerfile.github_action'
+      - 'github_action/**'
+  workflow_dispatch:
+
+jobs:
+  test-action:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.actor != 'dependabot[bot]'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test Action Build
+        run: |
+          docker build -f Dockerfile.github_action -t test-action .
+          echo "✅ Action builds successfully"
+
+      - name: Validate action.yaml
+        run: |
+          # Check required fields
+          grep -q "name:" action.yaml || (echo "❌ Missing name" && exit 1)
+          grep -q "description:" action.yaml || (echo "❌ Missing description" && exit 1)
+          grep -q "runs:" action.yaml || (echo "❌ Missing runs" && exit 1)
+          grep -q "branding:" action.yaml || (echo "❌ Missing branding" && exit 1)
+          echo "✅ action.yaml is valid"
+
+      - name: Check README sections
+        run: |
+          grep -q "## 🚀 Quick Setup" README.md || (echo "❌ Missing Quick Setup section" && exit 1)
+          grep -q "## 📋 Inputs" README.md || (echo "❌ Missing Inputs section" && exit 1)
+          grep -q "## 📤 Outputs" README.md || (echo "❌ Missing Outputs section" && exit 1)
+          echo "✅ README has required sections"
