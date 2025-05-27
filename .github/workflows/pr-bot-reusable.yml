@@ -46,8 +46,6 @@ on:
 jobs:
   pr-bot:
     runs-on: ubuntu-latest
-    if: ${{ !github.event.pull_request.draft }}
-    
     steps:
     - name: GitHub PR Bot Analysis
       uses: docker://ghcr.io/jacsamell/github-pr-bot:latest

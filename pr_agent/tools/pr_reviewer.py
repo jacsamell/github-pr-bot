@@ -625,6 +625,9 @@ class PRReviewer:
 
         # SIMPLIFIED AUTO-APPROVAL DECISION LOGIC
         
+        # Debug logging
+        get_logger().info(f"Auto-approval evaluation: ai_recommends={ai_recommends}, confidence={confidence}, security={security}, has_security_issues={has_security_issues}, human_approval_tag='{human_approval_tag}'")
+        
         # Check for force override (testing/development only)
         force_approve_override = get_settings().config.get('auto_approve_force_override', False)
         if force_approve_override:
@@ -634,21 +637,26 @@ class PRReviewer:
         
         # Safety check: If diff was pruned, require manual review
         if hasattr(self, 'diff_was_pruned') and self.diff_was_pruned:
+            get_logger().info("Auto-approval blocked: Diff was pruned")
             return False, "Diff was pruned due to size - incomplete analysis", details + "\n\n**⚠️ PRUNING DETECTED**: The PR diff was too large and had to be pruned, meaning the AI analysis is incomplete. Manual review is required for safety."
         
         # Safety check: Critical security issues always require manual review
         if has_security_issues and security < 8:
+            get_logger().info(f"Auto-approval blocked: Security concerns with low score ({security}/10)")
             return False, f"Security concerns detected with low score ({security}/10)", details
         
         # Safety check: Low confidence requires manual review
         if confidence < 85:
+            get_logger().info(f"Auto-approval blocked: Low confidence ({confidence}/100)")
             return False, f"AI confidence too low ({confidence}/100)", details
         
         # Main decision: Trust the AI's recommendation
         if ai_recommends:
+            get_logger().info("Auto-approval approved: AI recommends approval")
             reason = "AI recommends approval based on comprehensive analysis"
             return True, reason, details + f"\n\n**AI Reasoning**: {ai_reasoning}\n\n**Decision**: ✅ Trusting AI recommendation for approval"
         else:
+            get_logger().info("Auto-approval blocked: AI does not recommend approval")
             # Use the human approval tag if available, otherwise use generic reason
             if human_approval_tag and human_approval_tag.strip():
                 reason = f"Manual review required: {human_approval_tag}"

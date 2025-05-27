@@ -6,13 +6,22 @@ on:
 
 jobs:
   pr-bot:
-    uses: ./.github/workflows/pr-bot-reusable.yml
-    with:
-      auto_review: true
-      auto_describe: true
-      auto_improve: false
-      enable_auto_approval: true
-      max_findings: 8
-      pretty_logs: true
-    secrets:
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: GitHub PR Bot Analysis
+      uses: ./
+      with:
+        anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+        github_token: ${{ github.token }}
+        model: 'anthropic/claude-sonnet-4-20250514'
+        enable_auto_approval: true
+        auto_review: true
+        auto_describe: true
+        auto_improve: false
+        max_model_tokens: '100000'
+        require_trigger: false
+        max_findings: 5
+        pretty_logs: true
