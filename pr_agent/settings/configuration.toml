@@ -76,6 +76,7 @@ enable_claude_extended_thinking = true # Re-enabled with updated LiteLLM 1.71.1
 extended_thinking_budget_tokens = 16384  # Good balance of deep reasoning and PR size capacity
 extended_thinking_max_output_tokens = 20480  # Must be > budget_tokens (16384 + buffer)
 
+app_name = "github-pr-bot"
 
 [pr_reviewer] # /review #
 # enable/disable features
@@ -240,11 +241,11 @@ app_name = "pr-agent"
 ignore_bot_pr = true
 
 [github_action_config]
-# auto_review = true    # set as env var in .github/workflows/pr-agent.yaml
-# auto_describe = true  # set as env var in .github/workflows/pr-agent.yaml
-# auto_improve = true   # set as env var in .github/workflows/pr-agent.yaml
+# auto_review = true    # set as env var in .github/workflows/pr-bot.yaml
+# auto_describe = true  # set as env var in .github/workflows/pr-bot.yaml
+# auto_improve = true   # set as env var in .github/workflows/pr-bot.yaml
 # pr_actions = ['opened', 'reopened', 'ready_for_review', 'review_requested']
-# require_aidesc_trigger = false  # when true, PR-Agent will only run if ##aidesc is found in PR description
+# require_aidesc_trigger = false  # when true, GitHub PR Bot will only run if ##prbot is found in PR description
 
 [github_app]
 # these toggles allows running the github app from custom deployments

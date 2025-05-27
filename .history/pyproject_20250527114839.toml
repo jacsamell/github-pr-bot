@@ -6,10 +6,10 @@ build-backend = "setuptools.build_meta"
 name = "github-pr-bot"
 version = "1.0.0"
 authors = [
-    {name = "Jacob Samell", email = "jacob@jacsamell.com"},
+    {name = "Your Company", email = "dev@yourcompany.com"},
 ]
 maintainers = [
-    {name = "Jacob Samell", email = "jacob@jacsamell.com"},
+    {name = "Your Company", email = "dev@yourcompany.com"},
 ]
 description = "GitHub PR Bot - Automated PR analysis, review, and approval using Claude AI. Modified version of PR-Agent."
 readme = "README.md"
@@ -39,9 +39,9 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/jacsamell/github-pr-bot"
-"Bug Reports" = "https://github.com/jacsamell/github-pr-bot/issues"
-"Source" = "https://github.com/jacsamell/github-pr-bot"
+"Homepage" = "https://github.com/your-company/github-pr-bot"
+"Bug Reports" = "https://github.com/your-company/github-pr-bot/issues"
+"Source" = "https://github.com/your-company/github-pr-bot"
 
 [project.optional-dependencies]
 dev = [

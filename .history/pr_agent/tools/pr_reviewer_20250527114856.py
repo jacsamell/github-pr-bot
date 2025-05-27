@@ -460,8 +460,8 @@ class PRReviewer:
         """
         if not get_settings().config.enable_auto_approval:
             get_logger().info("Auto-approval option is disabled")
-            self.git_provider.publish_comment("Auto-approval option for GitHub PR Bot is disabled. "
-                                             "You can enable it via configuration file settings.")
+                            self.git_provider.publish_comment("Auto-approval option for GitHub PR Bot is disabled. "
+                                                   "You can enable it via configuration file settings.")
             return
 
         try:

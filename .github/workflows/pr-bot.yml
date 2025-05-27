@@ -1,16 +1,17 @@
-name: PR Agent
+name: GitHub PR Bot
 
 on:
   pull_request:
     types: [opened, reopened, ready_for_review, synchronize]
 
 jobs:
-  pr-agent:
-    uses: ./.github/workflows/pr-agent-reusable.yml
+  pr-bot:
+    uses: ./.github/workflows/pr-bot-reusable.yml
     with:
       auto_review: true
       auto_describe: true
-      auto_improve: false
+      auto_improve: true
       enable_auto_approval: true
+      max_findings: 8
     secrets:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }} 

@@ -3,9 +3,9 @@
 GitHub PR Bot - GitHub Action Runner
 
 This is a modified version of PR-Agent by Codium AI (https://github.com/Codium-ai/pr-agent)
-Modified on 2025-01-27 for company use as "GitHub PR Bot"
+Modified on 2025-01-XX for company use as "GitHub PR Bot"
 Licensed under GNU Affero General Public License v3.0 (AGPL-3.0)
-Source code: https://github.com/jacsamell/github-pr-bot
+Source code: https://github.com/your-company/github-pr-bot
 """
 
 import asyncio

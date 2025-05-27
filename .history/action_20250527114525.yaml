@@ -1,0 +1,8 @@
+name: 'GitHub PR Bot'
+description: 'Automated PR analysis, review, and approval using Claude AI. Modified version of PR-Agent (AGPL-3.0). Source: https://github.com/your-company/github-pr-bot'
+branding:
+  icon: 'award'
+  color: 'green'
+runs:
+  using: 'docker'
+  image: 'Dockerfile.github_action_dockerhub'
