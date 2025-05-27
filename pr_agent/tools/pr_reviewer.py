@@ -246,9 +246,9 @@ class PRReviewer:
         the feedback.
         """
         first_key = 'review'
-        last_key = 'security_concerns'
+        last_key = 'has_security_concerns'
         data = load_yaml(self.prediction.strip(),
-                         keys_fix_yaml=["ticket_compliance_check", "estimated_effort_to_review_[1-5]:", "security_concerns:", "key_issues_to_review:", "code_suggestions:",
+                         keys_fix_yaml=["ticket_compliance_check", "estimated_effort_to_review_[1-5]:", "has_security_concerns:", "key_issues_to_review:", "code_suggestions:",
                                         "confidence_score_[1-100]:", "complexity_score_[1-10]:", "security_score_[1-10]:", "auto_approve_recommendation:",
                                         "auto_approve_reasoning:", "requires_human_approval:", "relevant_file:", "relevant_line:", "suggestion:", "suggestion_header:",
                                         "suggestion_content:", "existing_code:", "improved_code:"],
@@ -409,9 +409,8 @@ class PRReviewer:
             
             # Add security labels if enabled
             if get_settings().pr_reviewer.enable_review_labels_security and get_settings().pr_reviewer.require_security_review:
-                security_concerns = data['review']['security_concerns']  # yes, because ...
-                security_concerns_bool = 'yes' in security_concerns.lower().strip() or 'true' in security_concerns.lower().strip()
-                if security_concerns_bool:
+                has_security_concerns = data['review'].get('has_security_concerns', False)  # true/false boolean
+                if has_security_concerns:
                     review_labels.append('Possible security concern')
             
             # Always add human approval requirement label if present (independent of other label settings)
@@ -540,9 +539,9 @@ class PRReviewer:
         """Parse the AI prediction to extract review data"""
         try:
             first_key = 'review'
-            last_key = 'security_concerns'
+            last_key = 'has_security_concerns'
             data = load_yaml(self.prediction.strip(),
-                             keys_fix_yaml=["ticket_compliance_check", "estimated_effort_to_review_[1-5]:", "security_concerns:", "key_issues_to_review:", "code_suggestions:",
+                             keys_fix_yaml=["ticket_compliance_check", "estimated_effort_to_review_[1-5]:", "has_security_concerns:", "key_issues_to_review:", "code_suggestions:",
                                             "confidence_score_[1-100]:", "complexity_score_[1-10]:", "security_score_[1-10]:", "auto_approve_recommendation:",
                                             "auto_approve_reasoning:", "requires_human_approval:", "relevant_file:", "relevant_line:", "suggestion:", "suggestion_header:",
                                             "suggestion_content:", "existing_code:", "improved_code:"],
@@ -595,8 +594,8 @@ class PRReviewer:
         
         # Extract issues and security concerns
         issues = review_data.get('key_issues_to_review', [])
-        security_concerns = review_data.get('security_concerns', '')
-        has_security_issues = security_concerns.lower().strip() not in ['no', 'none', '']
+        has_security_concerns = review_data.get('has_security_concerns', False)
+        has_security_issues = has_security_concerns
         
         # Build details string
         details = f"""

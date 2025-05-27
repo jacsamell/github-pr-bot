@@ -11,7 +11,6 @@ fallback_models = []
 require_aidesc_trigger = true
 
 # Auto-run all PR tools by default (can be overridden per repo)
-auto_describe = true
 auto_review = true
 auto_improve = true
 

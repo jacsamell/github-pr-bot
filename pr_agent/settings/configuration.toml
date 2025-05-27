@@ -16,7 +16,7 @@ publish_output=true
 publish_output_progress=true
 verbosity_level=0 # 0,1,2
 use_extra_bad_extensions=false
-dry_run=true # when true, print comments to console instead of posting to GitHub
+dry_run=false # when true, print comments to console instead of posting to GitHub
 # Log
 log_level="INFO"
 # Configurations

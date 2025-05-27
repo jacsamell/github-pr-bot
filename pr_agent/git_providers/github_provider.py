@@ -597,6 +597,9 @@ class GithubProvider(GitProvider):
             return False
 
     def edit_comment(self, comment, body: str):
+        if get_settings().get("config.dry_run", False):
+            get_logger().info(f"\n{'='*80}\n🔍 DRY RUN - EDIT COMMENT:\n{'='*80}\nWould edit comment {getattr(comment, 'id', 'unknown')} with body:\n{body[:200]}{'...' if len(body) > 200 else ''}\n{'='*80}\n")
+            return
         try:
             body = self.limit_output_characters(body, self.max_comment_chars)
             comment.edit(body=body)
@@ -610,6 +613,9 @@ class GithubProvider(GitProvider):
                 get_logger().exception(f"Failed to edit github comment", artifact={"error": e})
 
     def edit_comment_from_comment_id(self, comment_id: int, body: str):
+        if get_settings().get("config.dry_run", False):
+            get_logger().info(f"\n{'='*80}\n🔍 DRY RUN - EDIT COMMENT BY ID:\n{'='*80}\nWould edit comment {comment_id} with body:\n{body[:200]}{'...' if len(body) > 200 else ''}\n{'='*80}\n")
+            return
         try:
             # self.pr.get_issue_comment(comment_id).edit(body)
             body = self.limit_output_characters(body, self.max_comment_chars)
@@ -621,6 +627,9 @@ class GithubProvider(GitProvider):
             get_logger().exception(f"Failed to edit comment, error: {e}")
 
     def reply_to_comment_from_comment_id(self, comment_id: int, body: str):
+        if get_settings().get("config.dry_run", False):
+            get_logger().info(f"\n{'='*80}\n🔍 DRY RUN - REPLY TO COMMENT:\n{'='*80}\nWould reply to comment {comment_id} with body:\n{body[:200]}{'...' if len(body) > 200 else ''}\n{'='*80}\n")
+            return
         try:
             # self.pr.get_issue_comment(comment_id).edit(body)
             body = self.limit_output_characters(body, self.max_comment_chars)
@@ -643,6 +652,12 @@ class GithubProvider(GitProvider):
             return None
 
     def publish_file_comments(self, file_comments: list) -> bool:
+        if get_settings().get("config.dry_run", False):
+            get_logger().info(f"\n{'='*80}\n🔍 DRY RUN - PUBLISH FILE COMMENTS:\n{'='*80}\nWould publish {len(file_comments)} file comments\n{'='*80}\n")
+            for i, comment in enumerate(file_comments, 1):
+                get_logger().info(f"Comment {i}: {comment.get('path', 'unknown')} - {comment.get('body', '')[:100]}{'...' if len(comment.get('body', '')) > 100 else ''}")
+            get_logger().info(f"{'='*80}\n")
+            return True
         try:
             headers, existing_comments = self.pr._requester.requestJsonAndCheck(
                 "GET", f"{self.pr.url}/comments"
@@ -677,6 +692,9 @@ class GithubProvider(GitProvider):
             return False
 
     def remove_initial_comment(self):
+        if get_settings().get("config.dry_run", False):
+            get_logger().info(f"\n{'='*80}\n🔍 DRY RUN - REMOVE INITIAL COMMENT:\n{'='*80}\nWould remove temporary comments from PR #{self.pr_num}\n{'='*80}\n")
+            return
         try:
             for comment in getattr(self.pr, 'comments_list', []):
                 if comment.is_temporary:
@@ -685,6 +703,9 @@ class GithubProvider(GitProvider):
             get_logger().exception(f"Failed to remove initial comment, error: {e}")
 
     def remove_comment(self, comment):
+        if get_settings().get("config.dry_run", False):
+            get_logger().info(f"\n{'='*80}\n🔍 DRY RUN - REMOVE COMMENT:\n{'='*80}\nWould remove comment: {getattr(comment, 'id', 'unknown')}\n{'='*80}\n")
+            return
         try:
             comment.delete()
         except Exception as e:
@@ -745,6 +766,9 @@ class GithubProvider(GitProvider):
     def add_eyes_reaction(self, issue_comment_id: int, disable_eyes: bool = False) -> Optional[int]:
         if disable_eyes:
             return None
+        if get_settings().get("config.dry_run", False):
+            get_logger().info(f"\n{'='*80}\n🔍 DRY RUN - ADD EYES REACTION:\n{'='*80}\nWould add eyes reaction to comment {issue_comment_id}\n{'='*80}\n")
+            return 12345  # Return fake reaction ID in dry mode
         try:
             headers, data_patch = self.pr._requester.requestJsonAndCheck(
                 "POST", f"{self.base_url}/repos/{self.repo}/issues/comments/{issue_comment_id}/reactions",
@@ -756,6 +780,9 @@ class GithubProvider(GitProvider):
             return None
 
     def remove_reaction(self, issue_comment_id: int, reaction_id: str) -> bool:
+        if get_settings().get("config.dry_run", False):
+            get_logger().info(f"\n{'='*80}\n🔍 DRY RUN - REMOVE REACTION:\n{'='*80}\nWould remove reaction {reaction_id} from comment {issue_comment_id}\n{'='*80}\n")
+            return True
         try:
             # self.pr.get_issue_comment(issue_comment_id).delete_reaction(reaction_id)
             headers, data_patch = self.pr._requester.requestJsonAndCheck(
@@ -877,6 +904,9 @@ class GithubProvider(GitProvider):
     def create_or_update_pr_file(
         self, file_path: str, branch: str, contents="", message=""
     ) -> None:
+        if get_settings().get("config.dry_run", False):
+            get_logger().info(f"\n{'='*80}\n🔍 DRY RUN - CREATE/UPDATE FILE:\n{'='*80}\nWould update file {file_path} on branch {branch}\nMessage: {message}\nContent length: {len(contents)} chars\n{'='*80}\n")
+            return
         try:
             file_obj = self._get_repo().get_contents(file_path, ref=branch)
             sha1=file_obj.sha
@@ -1091,6 +1121,11 @@ class GithubProvider(GitProvider):
         return sub_issues
 
     def auto_approve(self) -> bool:
+        """Auto-approve a PR with dry_run mode support"""
+        if get_settings().get("config.dry_run", False):
+            get_logger().info(f"\n{'='*80}\n🔍 DRY RUN - AUTO APPROVE:\n{'='*80}\nWould auto-approve PR #{self.pr_num} in {self.repo}\n{'='*80}\n")
+            return True  # Return True in dry mode to simulate successful approval
+            
         try:
             get_logger().info(f"Attempting to auto-approve PR #{self.pr_num} in {self.repo}")
             get_logger().debug(f"Using deployment type: {self.deployment_type}")
