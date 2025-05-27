@@ -116,9 +116,16 @@ class GitProvider(ABC):
 
     def publish_code_suggestions(self, code_suggestions: list) -> bool:
         """Public method that handles dry_run mode"""
+        if not isinstance(code_suggestions, list):
+            get_logger().error("Invalid code_suggestions parameter - must be a list")
+            return False
+            
         if get_settings().get("config.dry_run", False):
             get_logger().info(f"\n{'='*80}\n🔍 DRY RUN - CODE SUGGESTIONS ({len(code_suggestions)} total):\n{'='*80}")
             for i, suggestion in enumerate(code_suggestions, 1):
+                if not isinstance(suggestion, dict):
+                    get_logger().warning(f"Invalid suggestion format at index {i}")
+                    continue
                 get_logger().info(f"\nSuggestion {i}:")
                 if 'relevant_file' in suggestion:
                     get_logger().info(f"  File: {suggestion['relevant_file']}")

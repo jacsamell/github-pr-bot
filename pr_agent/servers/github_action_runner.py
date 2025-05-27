@@ -73,7 +73,13 @@ async def handle_pull_request_event(event_payload: dict) -> None:
     # Get auto-action settings
     auto_describe = get_setting_or_env("GITHUB_ACTION_CONFIG.AUTO_DESCRIBE", True)
     auto_review = get_setting_or_env("GITHUB_ACTION_CONFIG.AUTO_REVIEW", True)
-    auto_improve = get_setting_or_env("GITHUB_ACTION_CONFIG.AUTO_IMPROVE", True)
+    auto_improve = get_setting_or_env("GITHUB_ACTION_CONFIG.AUTO_IMPROVE", False)  # Default to False to avoid unwanted runs
+    
+    # Debug logging to see what values we're getting
+    if pretty_logs:
+        get_logger().info(f"🔧 Configuration: auto_describe={auto_describe}, auto_review={auto_review}, auto_improve={auto_improve}")
+    else:
+        get_logger().info(f"Configuration: auto_describe={auto_describe}, auto_review={auto_review}, auto_improve={auto_improve}")
 
     # Configure for auto mode
     get_settings().config.is_auto_command = True
@@ -99,11 +105,22 @@ async def handle_pull_request_event(event_payload: dict) -> None:
                 get_logger().info("PR description completed")
             
         if is_true(auto_review):
-            if pretty_logs:
-                get_logger().info("🔍 Reviewing PR...")
+            # Check if auto-approval is enabled
+            enable_auto_approval = get_setting_or_env("CONFIG.ENABLE_AUTO_APPROVAL", False)
+            
+            if is_true(enable_auto_approval):
+                if pretty_logs:
+                    get_logger().info("🔍 Reviewing PR with auto-approval...")
+                else:
+                    get_logger().info("Reviewing PR with auto-approval...")
+                await PRReviewer(pr_url, args=['auto_approve']).run()
             else:
-                get_logger().info("Reviewing PR...")
-            await PRReviewer(pr_url).run()
+                if pretty_logs:
+                    get_logger().info("🔍 Reviewing PR...")
+                else:
+                    get_logger().info("Reviewing PR...")
+                await PRReviewer(pr_url).run()
+                
             if pretty_logs:
                 get_logger().info("✅ PR review completed")
             else:
@@ -114,11 +131,23 @@ async def handle_pull_request_event(event_payload: dict) -> None:
                 get_logger().info("💡 Generating code suggestions...")
             else:
                 get_logger().info("Generating code suggestions...")
-            await PRCodeSuggestions(pr_url).run()
+            try:
+                await PRCodeSuggestions(pr_url).run()
+                if pretty_logs:
+                    get_logger().info("✅ Code suggestions completed")
+                else:
+                    get_logger().info("Code suggestions completed")
+            except Exception as e:
+                if pretty_logs:
+                    get_logger().error(f"❌ Code suggestions failed: {e}")
+                else:
+                    get_logger().error(f"Code suggestions failed: {e}")
+                # Don't re-raise the exception to avoid stopping other tools
+        else:
             if pretty_logs:
-                get_logger().info("✅ Code suggestions completed")
+                get_logger().info("⏭️ Code suggestions disabled, skipping...")
             else:
-                get_logger().info("Code suggestions completed")
+                get_logger().info("Code suggestions disabled, skipping...")
             
         if pretty_logs:
             get_logger().info("🎉 GitHub PR Bot analysis complete!")

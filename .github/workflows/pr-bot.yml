@@ -10,9 +10,9 @@ jobs:
     with:
       auto_review: true
       auto_describe: true
-      auto_improve: true
+      auto_improve: false
       enable_auto_approval: true
       max_findings: 8
       pretty_logs: true
     secrets:
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }} 
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

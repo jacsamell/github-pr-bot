@@ -18,7 +18,7 @@ verbosity_level=0 # 0,1,2
 use_extra_bad_extensions=false
 dry_run=false # when true, print comments to console instead of posting to GitHub
 # Log
-log_level="DEBUG"
+log_level="INFO"
 # Configurations
 use_wiki_settings_file=true
 use_repo_settings_file=true
