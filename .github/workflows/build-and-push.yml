@@ -2,14 +2,10 @@ name: Build and Push Docker Image
 
 on:
   push:
-    branches: [main, master]
-  pull_request:
-    types: [closed]
-    branches: [main, master]
+    branches: [main]
 
 jobs:
   build-and-push:
-    if: github.event_name == 'push' || (github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     permissions:
       contents: read
