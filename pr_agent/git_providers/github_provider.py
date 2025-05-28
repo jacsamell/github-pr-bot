@@ -927,11 +927,44 @@ class GithubProvider(GitProvider):
         try:
             label_color_map = {"Bug fix": "1d76db", "Tests": "e99695", "Bug fix with tests": "c5def5",
                                "Enhancement": "bfd4f2", "Documentation": "d4c5f9",
-                               "Other": "d1bcf9", "AI Approved": "c5f9c5", "Human Review Required": "d1bcf9"}
+                               "Other": "d1bcf9", "AI Approved": "c5f9c5", "Human Review Required": "d1bcf9",
+                               "Possible security concern": "b60205"}
+            
+            # Define effort colors once outside the loop
+            effort_colors = {
+                1: "0366d6",  # Blue - easy
+                2: "0969da",  # Medium blue
+                3: "f9c513",  # Yellow - moderate
+                4: "fb8500",  # Orange - hard
+                5: "d73a4a"   # Red - very hard
+            }
+            
+            # Compile regex pattern once for better performance
+            effort_pattern = re.compile(r'review\s+effort\s+(\d+)', re.IGNORECASE)
             
             post_parameters = []
             for p in pr_types:
-                color = label_color_map.get(p, "d1bcf9")  # default to "Other" color
+                # Handle review effort labels with distinct colors
+                if "review effort" in p.lower():
+                    match = effort_pattern.search(p)
+                    
+                    if match:
+                        try:
+                            effort_num = int(match.group(1))
+                            # Validate range and get color
+                            if 1 <= effort_num <= 5:
+                                color = effort_colors[effort_num]
+                            else:
+                                get_logger().warning(f"Review effort number {effort_num} out of range (1-5), using default color")
+                                color = "f9c513"  # default to yellow
+                        except (ValueError, TypeError):
+                            get_logger().warning(f"Failed to parse effort number from label: {p}")
+                            color = "f9c513"  # default to yellow
+                    else:
+                        get_logger().warning(f"Could not extract effort number from label: {p}")
+                        color = "f9c513"  # default to yellow
+                else:
+                    color = label_color_map.get(p, "d1bcf9")  # default to "Other" color
                 post_parameters.append({"name": p, "color": color})
             headers, data = self.pr._requester.requestJsonAndCheck(
                 "PUT", f"{self.pr.issue_url}/labels", input=post_parameters
