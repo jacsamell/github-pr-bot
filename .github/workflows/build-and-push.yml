@@ -8,8 +8,10 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write  # Need write for creating releases and tags
       packages: write
+      actions: read
+      id-token: write
     
     steps:
     - name: Checkout repository
