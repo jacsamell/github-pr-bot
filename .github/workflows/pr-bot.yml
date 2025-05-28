@@ -14,9 +14,10 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      issues: write
     steps:
     - name: GitHub PR Bot Analysis
-      uses: jacsamell/github-pr-bot@v1.0.3
+      uses: jacsamell/github-pr-bot@v1.0.4
 
       with:
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
