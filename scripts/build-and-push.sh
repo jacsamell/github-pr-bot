@@ -118,4 +118,9 @@ echo "To use in GitHub Actions:"
 echo "  uses: docker://$IMAGE_NAME:latest"
 echo "  uses: docker://$IMAGE_NAME:$NEW_VERSION"
 echo "  uses: jacsamell/github-pr-bot@$NEW_VERSION"
-echo "  uses: jacsamell/github-pr-bot@v$MAJOR" 
+echo "  uses: jacsamell/github-pr-bot@v$MAJOR"
+
+# Output the new version for GitHub Actions
+if [ -n "$GITHUB_OUTPUT" ]; then
+    echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+fi 

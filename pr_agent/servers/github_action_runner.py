@@ -61,6 +61,17 @@ async def handle_pull_request_event(event_payload: dict) -> None:
         get_logger().error("No PR URL found in event payload")
         return
 
+    # Check if PR is draft and if we should process draft PRs
+    pull_request = event_payload.get("pull_request", {})
+    is_draft = pull_request.get("draft", False)
+    feedback_on_draft_pr = get_setting_or_env("CONFIG.FEEDBACK_ON_DRAFT_PR", False)
+    if is_draft and not is_true(feedback_on_draft_pr):
+        if pretty_logs:
+            get_logger().info(f"⏭️ Ignoring draft PR (set feedback_on_draft_pr=true to process draft PRs)")
+        else:
+            get_logger().info(f"Ignoring draft PR (set feedback_on_draft_pr=true to process draft PRs)")
+        return
+
     # Check for ##prbot trigger if required
     require_trigger = get_setting_or_env("GITHUB_ACTION_CONFIG.REQUIRE_AIDESC_TRIGGER", False)
     if is_true(require_trigger):

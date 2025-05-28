@@ -54,6 +54,10 @@ inputs:
     description: 'Enable security concern labels on PRs'
     required: false
     default: 'false'
+  feedback_on_draft_pr:
+    description: 'Enable processing of draft PRs (default: false to skip draft PRs)'
+    required: false
+    default: 'false'
 
 outputs:
   review_posted:
@@ -86,3 +90,4 @@ runs:
     GITHUB_ACTION_CONFIG__PRETTY_LOGS: ${{ inputs.pretty_logs }}
     PR_REVIEWER__ENABLE_REVIEW_LABELS_EFFORT: ${{ inputs.enable_review_labels_effort }}
     PR_REVIEWER__ENABLE_REVIEW_LABELS_SECURITY: ${{ inputs.enable_review_labels_security }}
+    CONFIG__FEEDBACK_ON_DRAFT_PR: ${{ inputs.feedback_on_draft_pr }}
