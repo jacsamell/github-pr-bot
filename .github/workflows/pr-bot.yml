@@ -16,7 +16,7 @@ jobs:
       pull-requests: write
     steps:
     - name: GitHub PR Bot Analysis
-      uses: jacsamell/github-pr-bot@v1
+      uses: jacsamell/github-pr-bot@v1.0.3
 
       with:
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -24,4 +24,3 @@ jobs:
         enable_auto_approval: true
         enable_review_labels_effort: true
         enable_review_labels_security: true
-        publish_output: true

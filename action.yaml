@@ -54,10 +54,6 @@ inputs:
     description: 'Enable security concern labels on PRs'
     required: false
     default: 'false'
-  publish_output:
-    description: 'Publish review output to PR (required for labels)'
-    required: false
-    default: 'true'
 
 outputs:
   review_posted:
@@ -88,8 +84,5 @@ runs:
     CONFIG__REQUIRE_AIDESC_TRIGGER: ${{ inputs.require_trigger }}
     PR_REVIEWER__NUM_MAX_FINDINGS: ${{ inputs.max_findings }}
     GITHUB_ACTION_CONFIG__PRETTY_LOGS: ${{ inputs.pretty_logs }}
-    CONFIG__PUBLISH_OUTPUT: ${{ inputs.publish_output }}
     PR_REVIEWER__ENABLE_REVIEW_LABELS_EFFORT: ${{ inputs.enable_review_labels_effort }}
     PR_REVIEWER__ENABLE_REVIEW_LABELS_SECURITY: ${{ inputs.enable_review_labels_security }}
-    PR_REVIEWER__REQUIRE_ESTIMATE_EFFORT_TO_REVIEW: ${{ inputs.enable_review_labels_effort }}
-    PR_REVIEWER__REQUIRE_SECURITY_REVIEW: ${{ inputs.enable_review_labels_security }}
