@@ -24,6 +24,7 @@
 | 💡 **Code Suggestions** | Specific improvements and best practices | Learn better coding patterns, optimize performance |
 | ✅ **Auto Approval** | Safe approval of low-risk changes | Speed up workflow, focus reviews on complex changes |
 | 🎯 **Smart Triggers** | Flexible activation via PR events or manual commands | Control when and how the bot runs |
+| 📐 **Repository Rules** | Respects official Cursor rules files in your repository | Follows your project's coding standards automatically |
 
 ## 🚀 Quick Setup
 
@@ -121,6 +122,7 @@ Create `.pr_bot.toml`:
 model = "anthropic/claude-sonnet-4-20250514"
 enable_auto_approval = true
 max_model_tokens = 100000
+use_cursor_rules = true  # Enable Cursor rules (default: true)
 
 [github_action_config]
 require_aidesc_trigger = true  # Requires ##prbot in PR description
@@ -128,6 +130,56 @@ auto_describe = true
 auto_review = true
 auto_improve = true
 ```
+
+## 📐 Cursor Rules Support
+
+The bot automatically detects and respects official Cursor rules in your repository, ensuring AI reviews follow your project's specific coding standards.
+
+### Supported Rules Files
+
+The bot looks for these official Cursor rules files:
+
+**Current Format (Recommended):**
+- `.cursor/rules/*.mdc` - Modern Cursor project rules files
+
+**Legacy Format (Deprecated but supported):**
+- `.cursorrules` - Legacy Cursor rules file
+
+### Example Rules File
+
+Create `.cursor/rules/style.mdc` in your repository:
+
+```markdown
+---
+description: Code style and formatting rules
+alwaysApply: true
+---
+
+# Project Coding Rules
+
+## Code Style
+- Use 2 spaces for indentation
+- Prefer const over let when possible
+- Always use semicolons
+- Use single quotes for strings
+
+## Naming Conventions
+- Use camelCase for variables and functions
+- Use PascalCase for classes and components
+- Use UPPER_SNAKE_CASE for constants
+
+## Patterns to Avoid
+- Don't use console.log in production code
+- Avoid nested ternary operators
+- Never commit commented-out code
+
+## Preferred Patterns
+- Use TypeScript strict mode
+- Prefer async/await over promises.then()
+- Use destructuring for object properties
+```
+
+The bot will automatically include these rules in its analysis, ensuring consistent code reviews that match your project's standards.
 
 ## Usage
 

@@ -23,6 +23,7 @@ from pr_agent.config_loader import get_settings
 from pr_agent.git_providers import (GithubProvider, get_git_provider,
                                     get_git_provider_with_context)
 from pr_agent.git_providers.git_provider import get_main_pr_language
+from pr_agent.git_providers.utils import add_repository_rules_to_prompt
 from pr_agent.log import get_logger
 from pr_agent.servers.help import HelpMessage
 from pr_agent.tools.ticket_pr_compliance_check import (
@@ -428,6 +429,9 @@ class PRDescription:
 
         system_prompt = environment.from_string(get_settings().get(prompt, {}).get("system", "")).render(self.variables)
         user_prompt = environment.from_string(get_settings().get(prompt, {}).get("user", "")).render(self.variables)
+        
+        # Add repository-specific cursor rules to the system prompt
+        system_prompt = add_repository_rules_to_prompt(system_prompt)
 
         response, finish_reason = await self.ai_handler.chat_completion(
             model=model,

@@ -1,0 +1,46 @@
+# PR Agent Cursor Rules
+
+## Code Style
+- Use Python PEP 8 style guidelines
+- Use 4 spaces for indentation (never tabs)
+- Line length should not exceed 120 characters
+- Use double quotes for strings unless single quotes avoid escaping
+- Add trailing commas in multi-line data structures
+
+## Naming Conventions
+- Use snake_case for variables, functions, and module names
+- Use PascalCase for class names
+- Use UPPER_SNAKE_CASE for constants
+- Prefix private methods and attributes with underscore
+
+## Best Practices
+- Always use type hints for function parameters and return values
+- Use docstrings for all public functions and classes
+- Prefer f-strings over .format() or % formatting
+- Use pathlib.Path instead of os.path for file operations
+- Always handle exceptions explicitly, avoid bare except clauses
+
+## Patterns to Avoid
+- Don't use global variables
+- Avoid nested functions with more than 2 levels
+- Don't leave print() statements in production code
+- Never commit TODO comments without GitHub issues
+- Avoid importing * (star imports)
+
+## Error Handling
+- Use specific exception types instead of generic Exception
+- Always log errors with appropriate context
+- Use try/except blocks close to the failing operation
+- Prefer early returns to reduce nesting
+
+## Documentation
+- All public functions must have docstrings
+- Use Google-style docstrings format
+- Include type information in docstrings when not obvious
+- Document complex algorithms with inline comments
+
+## Testing
+- Write unit tests for all new functions
+- Use descriptive test method names
+- Follow AAA pattern: Arrange, Act, Assert
+- Mock external dependencies in tests 

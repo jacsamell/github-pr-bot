@@ -71,6 +71,9 @@ auto_approve_force_override=false # NEVER set to true in production! Only for te
 # draft PR handling
 feedback_on_draft_pr=false # Set to true to enable processing of draft PRs
 
+# Cursor rules handling
+use_cursor_rules=true # Set to true to enable reading official Cursor rules from repositories (.cursor/rules/*.mdc and .cursorrules)
+
 # extended thinking for Claude reasoning models
 enable_claude_extended_thinking = true # Re-enabled with updated LiteLLM 1.71.1
 extended_thinking_budget_tokens = 16384  # Good balance of deep reasoning and PR size capacity

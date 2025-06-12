@@ -15,6 +15,7 @@ from pr_agent.config_loader import get_settings
 from pr_agent.git_providers import get_git_provider
 from pr_agent.git_providers.git_provider import get_main_pr_language
 from pr_agent.git_providers.github_provider import GithubProvider
+from pr_agent.git_providers.utils import add_repository_rules_to_prompt
 from pr_agent.log import get_logger
 from pr_agent.servers.help import HelpMessage
 
@@ -155,6 +156,10 @@ class PR_LineQuestions:
         environment = Environment(undefined=StrictUndefined)
         system_prompt = environment.from_string(get_settings().pr_line_questions_prompt.system).render(variables)
         user_prompt = environment.from_string(get_settings().pr_line_questions_prompt.user).render(variables)
+        
+        # Add repository-specific cursor rules to the system prompt
+        system_prompt = add_repository_rules_to_prompt(system_prompt)
+        
         if get_settings().config.verbosity_level >= 2:
             # get_logger().info(f"\nSystem prompt:\n{system_prompt}")
             # get_logger().info(f"\nUser prompt:\n{user_prompt}")

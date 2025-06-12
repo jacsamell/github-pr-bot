@@ -1212,8 +1212,14 @@ def github_action_output(output_data: dict, key_name: str):
         if not get_settings().get('github_action_config.enable_output', False):
             return
 
+        # Check if GITHUB_OUTPUT environment variable exists
+        github_output_path = os.environ.get('GITHUB_OUTPUT')
+        if not github_output_path:
+            get_logger().debug("GITHUB_OUTPUT environment variable not set, skipping action output")
+            return
+
         key_data = output_data.get(key_name, {})
-        with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
+        with open(github_output_path, 'a') as fh:
             print(f"{key_name}={json.dumps(key_data, indent=None, ensure_ascii=False)}", file=fh)
     except Exception as e:
         get_logger().error(f"Failed to write to GitHub Action output: {e}")
