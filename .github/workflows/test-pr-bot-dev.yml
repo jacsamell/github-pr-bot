@@ -1,0 +1,65 @@
+name: Test PR Bot (Development)
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, synchronize]
+
+concurrency:
+  group: test-pr-bot-dev-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  test-pr-bot-dev:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Build local PR bot image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.github_action
+        tags: pr-bot-dev:latest
+        load: true
+        no-cache: true
+        
+    - name: Test PR Bot with Development Code
+      run: |
+        docker run --rm \
+          -e ANTHROPIC__KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
+          -e GITHUB_TOKEN="${{ github.token }}" \
+          -e GITHUB_ACTION_CONFIG__AUTO_REVIEW="true" \
+          -e CONFIG__ENABLE_AUTO_APPROVAL="true" \
+          -e PR_REVIEWER__ENABLE_REVIEW_LABELS_EFFORT="true" \
+          -e PR_REVIEWER__ENABLE_REVIEW_LABELS_SECURITY="true" \
+          -e CONFIG__USE_CURSOR_RULES="true" \
+          -e CONFIG__MODEL="anthropic/claude-sonnet-4-20250514" \
+          -e CONFIG__MAX_MODEL_TOKENS="100000" \
+          -e PR_REVIEWER__NUM_MAX_FINDINGS="5" \
+          -e GITHUB_ACTION_CONFIG__PRETTY_LOGS="true" \
+          -e CONFIG__FEEDBACK_ON_DRAFT_PR="false" \
+          -e GITHUB_ACTION_CONFIG__ENABLE_OUTPUT="false" \
+          -e GITHUB_EVENT_PATH="${GITHUB_EVENT_PATH}" \
+          -e GITHUB_REPOSITORY="${GITHUB_REPOSITORY}" \
+          -e GITHUB_EVENT_NAME="${GITHUB_EVENT_NAME}" \
+          -e GITHUB_HEAD_REF="${GITHUB_HEAD_REF}" \
+          -e GITHUB_BASE_REF="${GITHUB_BASE_REF}" \
+          -e GITHUB_SHA="${GITHUB_SHA}" \
+          -e GITHUB_ACTOR="${GITHUB_ACTOR}" \
+          -e GITHUB_WORKFLOW="${GITHUB_WORKFLOW}" \
+          -e GITHUB_RUN_ID="${GITHUB_RUN_ID}" \
+          -e GITHUB_RUN_NUMBER="${GITHUB_RUN_NUMBER}" \
+          -e GITHUB_API_URL="${GITHUB_API_URL}" \
+          -e GITHUB_SERVER_URL="${GITHUB_SERVER_URL}" \
+          -v "${GITHUB_EVENT_PATH}:${GITHUB_EVENT_PATH}" \
+          -v "${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}" \
+          -w "${GITHUB_WORKSPACE}" \
+          pr-bot-dev:latest 

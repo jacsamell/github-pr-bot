@@ -22,6 +22,7 @@ from pr_agent.git_providers import (get_git_provider,
 from pr_agent.git_providers.git_provider import (IncrementalPR,
                                                  get_main_pr_language)
 from pr_agent.log import get_logger
+from pr_agent.git_providers.utils import add_repository_rules_to_prompt
 from pr_agent.servers.help import HelpMessage
 from pr_agent.tools.ticket_pr_compliance_check import (
     extract_and_cache_pr_tickets, extract_tickets)
@@ -230,6 +231,9 @@ class PRReviewer:
         environment = Environment(undefined=StrictUndefined)
         system_prompt = environment.from_string(get_settings().pr_review_prompt.system).render(variables)
         user_prompt = environment.from_string(get_settings().pr_review_prompt.user).render(variables)
+        
+        # Add repository-specific cursor rules to the system prompt
+        system_prompt = add_repository_rules_to_prompt(system_prompt)
 
         response, finish_reason = await self.ai_handler.chat_completion(
             model=model,
@@ -641,22 +645,14 @@ class PRReviewer:
             get_logger().info("Auto-approval blocked: Diff was pruned")
             return False, "Diff was pruned due to size - incomplete analysis", details + "\n\n**⚠️ PRUNING DETECTED**: The PR diff was too large and had to be pruned, meaning the AI analysis is incomplete. Manual review is required for safety."
         
-        # Safety check: Critical security issues always require manual review
-        if has_security_issues and security < 8:
-            get_logger().info(f"Auto-approval blocked: Security concerns with low score ({security}/10)")
-            return False, f"Security concerns detected with low score ({security}/10)", details
+        # Simple auto-approval logic: AI must say YES with >80% confidence and security ≥8
+        confidence_threshold = 80  # Must be >80% confidence
+        security_threshold = 8     # Must be ≥8/10 security
         
-        # Safety check: Low confidence requires manual review
-        if confidence < 85:
-            get_logger().info(f"Auto-approval blocked: Low confidence ({confidence}/100)")
-            return False, f"AI confidence too low ({confidence}/100)", details
+        get_logger().info(f"Auto-approval thresholds: AI must recommend=True, confidence>{confidence_threshold}, security>={security_threshold}")
         
-        # Main decision: Trust the AI's recommendation
-        if ai_recommends:
-            get_logger().info("Auto-approval approved: AI recommends approval")
-            reason = "AI recommends approval based on comprehensive analysis"
-            return True, reason, details + f"\n\n**AI Reasoning**: {ai_reasoning}\n\n**Decision**: ✅ Trusting AI recommendation for approval"
-        else:
+        # Main decision: AI must recommend approval
+        if not ai_recommends:
             get_logger().info("Auto-approval blocked: AI does not recommend approval")
             # Use the human approval tag if available, otherwise use generic reason
             if human_approval_tag and human_approval_tag.strip():
@@ -664,6 +660,21 @@ class PRReviewer:
             else:
                 reason = "AI does not recommend auto-approval"
             return False, reason, details + f"\n\n**AI Reasoning**: {ai_reasoning}\n\n**Decision**: 🔍 AI recommends manual review"
+        
+        # Safety check: Confidence must be >80%
+        if confidence <= confidence_threshold:
+            get_logger().info(f"Auto-approval blocked: Confidence ({confidence}/100) must be >{confidence_threshold}")
+            return False, f"AI confidence ({confidence}/100) must be >{confidence_threshold}", details
+        
+        # Safety check: Security must be ≥8
+        if security < security_threshold:
+            get_logger().info(f"Auto-approval blocked: Security score ({security}/10) must be >={security_threshold}")
+            return False, f"Security score ({security}/10) must be >={security_threshold}", details
+        
+        # All checks passed
+        get_logger().info("Auto-approval approved: All criteria met")
+        reason = "AI recommends approval with high confidence and security"
+        return True, reason, details + f"\n\n**AI Reasoning**: {ai_reasoning}\n\n**Decision**: ✅ All auto-approval criteria met"
 
     def _safe_extract_score(self, value, min_val, max_val, default):
         """Safely extract and validate a numeric score"""

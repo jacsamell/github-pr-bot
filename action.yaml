@@ -58,6 +58,10 @@ inputs:
     description: 'Enable processing of draft PRs (default: false to skip draft PRs)'
     required: false
     default: 'false'
+  use_cursor_rules:
+    description: 'Enable reading Cursor rules from repository (.cursor/rules/*.mdc and .cursorrules)'
+    required: false
+    default: 'true'
 
 outputs:
   review_posted:
@@ -91,3 +95,4 @@ runs:
     PR_REVIEWER__ENABLE_REVIEW_LABELS_EFFORT: ${{ inputs.enable_review_labels_effort }}
     PR_REVIEWER__ENABLE_REVIEW_LABELS_SECURITY: ${{ inputs.enable_review_labels_security }}
     CONFIG__FEEDBACK_ON_DRAFT_PR: ${{ inputs.feedback_on_draft_pr }}
+    CONFIG__USE_CURSOR_RULES: ${{ inputs.use_cursor_rules }}

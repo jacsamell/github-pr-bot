@@ -11,6 +11,7 @@ from pr_agent.algo.utils import ModelType
 from pr_agent.config_loader import get_settings
 from pr_agent.git_providers import get_git_provider
 from pr_agent.git_providers.git_provider import get_main_pr_language
+from pr_agent.git_providers.utils import add_repository_rules_to_prompt
 from pr_agent.log import get_logger
 from pr_agent.servers.help import HelpMessage
 
@@ -106,6 +107,10 @@ class PRQuestions:
         environment = Environment(undefined=StrictUndefined)
         system_prompt = environment.from_string(get_settings().pr_questions_prompt.system).render(variables)
         user_prompt = environment.from_string(get_settings().pr_questions_prompt.user).render(variables)
+        
+        # Add repository-specific cursor rules to the system prompt
+        system_prompt = add_repository_rules_to_prompt(system_prompt)
+        
         if 'img_path' in variables:
             img_path = self.vars['img_path']
             response, finish_reason = await (self.ai_handler.chat_completion
