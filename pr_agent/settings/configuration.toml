@@ -6,7 +6,8 @@
 
 [config]
 # models
-model="anthropic/claude-sonnet-4-20250514"
+# Leave blank to enable auto-selection in config_loader.py (GPT-5 if OpenAI key, else Claude Sonnet 4 if Anthropic key)
+model=""
 fallback_models=[]
 #model_reasoning="o4-mini" # dedictated reasoning model for self-reflection
 #model_weak="gpt-4o" # optional, a weaker model to use for some easier tasks
@@ -31,7 +32,7 @@ response_language="en-US" # Language locales code for PR responses in ISO 3166 a
 # token limits
 max_description_tokens = 500
 max_commits_tokens = 500
-max_model_tokens = 100000 # Limits the maximum number of tokens that can be used by any model, regardless of the model's default capabilities.
+max_model_tokens = 175000 # Global cap to align with desired headroom under 200K models
 custom_model_max_tokens=-1 # for models not in the default list
 model_token_count_estimate_factor=0.3 # factor to increase the token count estimate, in order to reduce likelihood of model failure due to too many tokens - applicable only when requesting an accurate estimate.
 # patch extension logic
@@ -73,6 +74,13 @@ feedback_on_draft_pr=false # Set to true to enable processing of draft PRs
 
 # Cursor rules handling
 use_cursor_rules=true # Set to true to enable reading official Cursor rules from repositories (.cursor/rules/*.mdc and .cursorrules)
+
+# Cursor rules budgeting
+max_cursor_rules_tokens = 20000
+cursor_rules_context_ratio = 0.25
+
+# Default output budget when not using extended thinking
+default_max_output_tokens = 2048
 
 # extended thinking for Claude reasoning models
 enable_claude_extended_thinking = true # Re-enabled with updated LiteLLM 1.71.1

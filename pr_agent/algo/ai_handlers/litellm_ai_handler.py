@@ -7,7 +7,7 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt
 
 from pr_agent.algo import CLAUDE_EXTENDED_THINKING_MODELS, NO_SUPPORT_TEMPERATURE_MODELS, SUPPORT_REASONING_EFFORT_MODELS, USER_MESSAGE_ONLY_MODELS
 from pr_agent.algo.ai_handlers.base_ai_handler import BaseAiHandler
-from pr_agent.algo.utils import ReasoningEffort, get_version
+from pr_agent.algo.utils import ReasoningEffort, get_version, get_max_tokens
 from pr_agent.config_loader import get_settings
 from pr_agent.log import get_logger
 import json
@@ -188,6 +188,8 @@ class LiteLLMAIHandler(BaseAiHandler):
         """
         extended_thinking_budget_tokens = get_settings().config.get("extended_thinking_budget_tokens", 2048)
         extended_thinking_max_output_tokens = get_settings().config.get("extended_thinking_max_output_tokens", 4096)
+        # Ensure the model still has room to return an answer when thinking is enabled
+        min_output_after_thinking = get_settings().config.get("extended_thinking_min_output_tokens", 1024)
 
         # Validate extended thinking parameters
         if not isinstance(extended_thinking_budget_tokens, int) or extended_thinking_budget_tokens <= 0:
@@ -197,13 +199,31 @@ class LiteLLMAIHandler(BaseAiHandler):
         if extended_thinking_max_output_tokens < extended_thinking_budget_tokens:
             raise ValueError(f"extended_thinking_max_output_tokens ({extended_thinking_max_output_tokens}) must be greater than or equal to extended_thinking_budget_tokens ({extended_thinking_budget_tokens})")
 
+        # Start from any precomputed max_tokens (dynamic fit), cap by configured max
+        precomputed_max = kwargs.get("max_tokens", extended_thinking_max_output_tokens)
+        max_tokens_final = min(precomputed_max, extended_thinking_max_output_tokens)
+
+        # If max_tokens is too small relative to budget, reduce budget to fit a minimum output buffer
+        adjusted_budget = min(extended_thinking_budget_tokens, max(0, max_tokens_final - min_output_after_thinking))
+        if adjusted_budget <= 0:
+            # Not enough room for thinking + any output → disable thinking this call
+            if get_settings().config.verbosity_level >= 1:
+                get_logger().warning(
+                    "Insufficient token budget for extended thinking; disabling thinking for this call"
+                )
+            kwargs.pop("thinking", None)
+            kwargs["max_tokens"] = max_tokens_final
+            return kwargs
+
         kwargs["thinking"] = {
             "type": "enabled",
-            "budget_tokens": extended_thinking_budget_tokens
+            "budget_tokens": int(adjusted_budget),
         }
         if get_settings().config.verbosity_level >= 2:
-            get_logger().info(f"Adding max output tokens {extended_thinking_max_output_tokens} to model {model}, extended thinking budget tokens: {extended_thinking_budget_tokens}")
-        kwargs["max_tokens"] = extended_thinking_max_output_tokens
+            get_logger().info(
+                f"Extended thinking: budget={adjusted_budget}, max_tokens={max_tokens_final} for model {model}"
+            )
+        kwargs["max_tokens"] = max_tokens_final
 
         # temperature may only be set to 1 when thinking is enabled
         if get_settings().config.verbosity_level >= 2:
@@ -324,6 +344,27 @@ class LiteLLMAIHandler(BaseAiHandler):
                     "timeout": get_settings().config.ai_timeout,
                     "api_base": self.api_base,
                 }
+
+            # Dynamically set max_tokens to fit within the model's context window
+            try:
+                # Conservative output budget; can be overridden by extended thinking configuration
+                target_output_tokens = int(get_settings().config.get("default_max_output_tokens", 2048))
+                # Estimate input tokens from concatenated message content
+                concatenated_inputs = "\n".join([
+                    m.get("content", "") if isinstance(m.get("content", ""), str) else json.dumps(m.get("content", ""))
+                    for m in messages
+                ])
+                from pr_agent.algo.token_handler import TokenHandler
+                token_handler = TokenHandler()
+                input_tokens_estimate = token_handler.count_tokens(concatenated_inputs)
+                model_ctx = get_max_tokens(model)
+                # If input + desired output exceed context, reduce max output
+                available_for_output = max(256, model_ctx - input_tokens_estimate - 512)
+                kwargs["max_tokens"] = max(256, min(target_output_tokens, available_for_output))
+                if get_settings().config.verbosity_level >= 2:
+                    get_logger().info(f"Setting max_tokens={kwargs['max_tokens']} (ctx={model_ctx}, input≈{input_tokens_estimate}) for model {model}")
+            except Exception as e:
+                get_logger().debug(f"Unable to set dynamic max_tokens: {e}")
 
             # Add temperature only if model supports it
             if model not in self.no_support_temperature_models and not get_settings().config.custom_reasoning_model:

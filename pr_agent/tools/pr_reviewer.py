@@ -200,13 +200,28 @@ class PRReviewer:
                 self.patches_diff = result
                 self.diff_was_pruned = False
         else:
-            # Normal review mode
-            self.patches_diff = get_pr_diff(self.git_provider,
-                                          self.token_handler,
-                                          model,
-                                          add_line_numbers_to_hunks=True,
-                                          disable_extra_lines=False,)
-            self.diff_was_pruned = False
+            # Normal review mode: if diff too large, fallback to chunked processing
+            patches = get_pr_diff(self.git_provider,
+                                  self.token_handler,
+                                  model,
+                                  add_line_numbers_to_hunks=True,
+                                  disable_extra_lines=False,
+                                  return_pruning_info=True)
+            if isinstance(patches, tuple):
+                diff_text, pruned = patches
+                if pruned and not diff_text:
+                    # Use chunked diffs for very large PRs
+                    from pr_agent.algo.pr_processing import get_pr_multi_diffs
+                    max_calls = int(get_settings().pr_reviewer.get("max_number_of_calls", 3))
+                    chunks = get_pr_multi_diffs(self.git_provider, self.token_handler, model, max_calls=max_calls, add_line_numbers=True)
+                    # Concatenate chunks with separators to keep context manageable
+                    self.patches_diff = "\n\n---\n\n".join(chunks)
+                else:
+                    self.patches_diff = diff_text
+                self.diff_was_pruned = pruned
+            else:
+                self.patches_diff = patches
+                self.diff_was_pruned = False
 
         if self.patches_diff:
             get_logger().debug(f"PR diff", diff=self.patches_diff)
