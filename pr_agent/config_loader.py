@@ -86,3 +86,23 @@ if pyproject_path is not None:
 # Support GITHUB_TOKEN as an alternative to GITHUB__USER_TOKEN
 if os.environ.get('GITHUB_TOKEN') and not os.environ.get('GITHUB__USER_TOKEN'):
     get_settings().set('github.user_token', os.environ['GITHUB_TOKEN'])
+
+# Auto-select default model if user hasn’t explicitly set or overrides:
+try:
+    # Only set defaults if not explicitly set by repo/global settings
+    configured_model = get_settings().get('config.model', '').strip()
+    if not configured_model:
+        openai_key = get_settings().get('openai.key') or os.environ.get('OPENAI_API_KEY') or os.environ.get('OPENAI__KEY')
+        anthropic_key = get_settings().get('anthropic.key') or os.environ.get('ANTHROPIC_API_KEY') or os.environ.get('ANTHROPIC__KEY')
+
+        if openai_key:
+            # Prefer GPT-5 if OpenAI key is present
+            get_settings().set('config.model', 'gpt-5')
+            get_settings().set('config.fallback_models', ['anthropic/claude-sonnet-4-20250514'] if anthropic_key else [])
+        elif anthropic_key:
+            # Fall back to Claude Sonnet 4 if only Anthropic is present
+            get_settings().set('config.model', 'anthropic/claude-sonnet-4-20250514')
+        # else: leave as-is, user must set
+except Exception:
+    # Silent: don’t block initialization if auto-detect fails
+    pass

@@ -72,7 +72,15 @@ class TokenHandler:
             environment = Environment(undefined=StrictUndefined)
             system_prompt = environment.from_string(system).render(vars)
             user_prompt = environment.from_string(user).render(vars)
-            system_prompt_tokens = len(encoder.encode(system_prompt))
+
+            # Ensure token accounting includes repository-specific rules appended to system prompt
+            try:
+                from pr_agent.git_providers.utils import add_repository_rules_to_prompt as _add_rules
+                system_prompt_with_rules = _add_rules(system_prompt)
+            except Exception:
+                system_prompt_with_rules = system_prompt
+
+            system_prompt_tokens = len(encoder.encode(system_prompt_with_rules))
             user_prompt_tokens = len(encoder.encode(user_prompt))
             return system_prompt_tokens + user_prompt_tokens
         except Exception as e:

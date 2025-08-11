@@ -169,6 +169,31 @@ def get_repository_rules_for_prompt():
     rules_handler = get_cursor_rules()
     if rules_handler and rules_handler.has_rules():
         rules_content = rules_handler.get_rules_for_prompt()
+
+        # Optionally clip rules to a max token budget to avoid exceeding context
+        try:
+            from pr_agent.algo.token_handler import TokenHandler
+            from pr_agent.algo.utils import get_max_tokens
+            model = get_settings().config.model
+            token_handler = TokenHandler()
+            rules_tokens = token_handler.count_tokens(rules_content)
+
+            max_rules_tokens = int(get_settings().config.get('max_cursor_rules_tokens', 20000))
+            hard_cap_ratio = float(get_settings().config.get('cursor_rules_context_ratio', 0.25))
+            model_ctx = get_max_tokens(model)
+            hard_cap_tokens = max(2000, int(model_ctx * hard_cap_ratio))
+            allowed_tokens = min(max_rules_tokens, hard_cap_tokens)
+
+            if rules_tokens > allowed_tokens:
+                from pr_agent.algo.utils import clip_tokens
+                clipped = clip_tokens(rules_content, allowed_tokens, add_three_dots=True)
+                get_logger().warning(
+                    f"Cursor rules too large ({rules_tokens} tokens). Clipped to {allowed_tokens} tokens for prompting."
+                )
+                rules_content = clipped
+        except Exception as e:
+            get_logger().debug(f"Failed to apply cursor rules token budget: {e}")
+
         # Count rules size for logging
         rules_size = len(rules_content)
         get_logger().info(f"📋 Including repository Cursor rules in AI prompt ({rules_size:,} characters)")
