@@ -75,7 +75,7 @@ MAX_TOKENS = {
     'anthropic.claude-v2': 100000,
     'anthropic/claude-3-opus-20240229': 100000,
     'anthropic/claude-opus-4-20250514': 200000,  # Claude Opus 4
-    'anthropic/claude-sonnet-4-20250514': 200000,  # Claude Sonnet 4
+    'anthropic/claude-sonnet-4-20250514': 1000000,  # Claude Sonnet 4 — 1M context (Anthropic API)
     'anthropic/claude-3-5-sonnet-20240620': 100000,
     'anthropic/claude-3-5-sonnet-20241022': 100000,
     'anthropic/claude-3-7-sonnet-20250219': 200000,
