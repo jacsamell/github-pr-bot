@@ -33,7 +33,7 @@ inputs:
   max_model_tokens:
     description: 'Maximum tokens for AI model'
     required: false
-    default: '100000'
+    default: '1000000'
   require_trigger:
     description: 'Require ##prbot trigger in PR description'
     required: false
