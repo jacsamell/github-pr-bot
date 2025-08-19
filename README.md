@@ -181,6 +181,8 @@ alwaysApply: true
 
 The bot will automatically include these rules in its analysis, ensuring consistent code reviews that match your project's standards.
 
+By default, up to 10% of the model context (capped at 100k tokens) is allocated to Cursor rules. On 1M-context models, this allows up to 100k tokens of rules to be included.
+
 ## Usage
 
 ### Automatic Mode

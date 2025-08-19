@@ -1,7 +1,38 @@
 import os
-import litellm
 import openai
 import requests
+try:
+    # Shim: align Litellm's expected OpenAI type name with current OpenAI SDK
+    # Older Litellm versions import `ResponseTextConfig`, which was renamed to
+    # `ResponseFormatTextConfig` in newer OpenAI SDKs.
+    from openai.types.responses import (
+        response as _openai_response_mod,
+        response_create_params as _openai_response_params_mod,
+    )
+    if (
+        not hasattr(_openai_response_mod, "ResponseTextConfig")
+        and hasattr(_openai_response_mod, "ResponseFormatTextConfig")
+    ):
+        setattr(
+            _openai_response_mod,
+            "ResponseTextConfig",
+            _openai_response_mod.ResponseFormatTextConfig,
+        )
+    # Alias param type as well if needed
+    if (
+        not hasattr(_openai_response_params_mod, "ResponseTextConfigParam")
+        and hasattr(_openai_response_params_mod, "ResponseFormatTextConfigParam")
+    ):
+        setattr(
+            _openai_response_params_mod,
+            "ResponseTextConfigParam",
+            _openai_response_params_mod.ResponseFormatTextConfigParam,
+        )
+except Exception:
+    # Best effort compatibility; proceed even if aliasing fails
+    pass
+
+import litellm
 from litellm import acompletion
 from tenacity import retry, retry_if_exception_type, stop_after_attempt
 

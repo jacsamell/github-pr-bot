@@ -76,8 +76,8 @@ feedback_on_draft_pr=false # Set to true to enable processing of draft PRs
 use_cursor_rules=true # Set to true to enable reading official Cursor rules from repositories (.cursor/rules/*.mdc and .cursorrules)
 
 # Cursor rules budgeting
-max_cursor_rules_tokens = 20000
-cursor_rules_context_ratio = 0.25
+max_cursor_rules_tokens = 100000
+cursor_rules_context_ratio = 0.10
 
 # Default output budget when not using extended thinking
 default_max_output_tokens = 2048

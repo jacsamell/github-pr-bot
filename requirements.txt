@@ -1,7 +1,7 @@
 # Core AI provider support
-# Bump LiteLLM for GPT-5 routing and latest providers
-litellm>=1.74.0
-openai>=1.55.3
+# Keep LiteLLM and OpenAI in compatible versions to avoid type import mismatches
+litellm==1.75.8
+openai==1.100.1
 anthropic>=0.48
 tiktoken==0.8.0
 
