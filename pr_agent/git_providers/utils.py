@@ -178,8 +178,8 @@ def get_repository_rules_for_prompt():
             token_handler = TokenHandler()
             rules_tokens = token_handler.count_tokens(rules_content)
 
-            max_rules_tokens = int(get_settings().config.get('max_cursor_rules_tokens', 20000))
-            hard_cap_ratio = float(get_settings().config.get('cursor_rules_context_ratio', 0.25))
+            max_rules_tokens = int(get_settings().config.get('max_cursor_rules_tokens', 100000))
+            hard_cap_ratio = float(get_settings().config.get('cursor_rules_context_ratio', 0.10))
             model_ctx = get_max_tokens(model)
             hard_cap_tokens = max(2000, int(model_ctx * hard_cap_ratio))
             allowed_tokens = min(max_rules_tokens, hard_cap_tokens)
