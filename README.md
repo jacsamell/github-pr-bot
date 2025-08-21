@@ -68,7 +68,7 @@ jobs:
           auto_describe: true
           auto_improve: true
           enable_auto_approval: true
-          model: 'anthropic/claude-sonnet-4-20250514'
+          model: 'claude-sonnet-4-20250514'
           max_model_tokens: '1000000'
           require_trigger: false
 ```
@@ -100,7 +100,7 @@ jobs:
 | `auto_describe` | Enable automatic PR description generation | ❌ No | `true` |
 | `auto_improve` | Enable code improvement suggestions | ❌ No | `true` |
 | `enable_auto_approval` | Enable automatic approval of safe changes | ❌ No | `false` |
-| `model` | AI model to use | ❌ No | `anthropic/claude-sonnet-4-20250514` |
+| `model` | AI model to use | ❌ No | `claude-sonnet-4-20250514` |
 | `max_model_tokens` | Maximum tokens for AI model | ❌ No | `1000000` |
 | `require_trigger` | Require ##prbot trigger in PR description | ❌ No | `false` |
 
@@ -119,7 +119,7 @@ Create `.pr_bot.toml`:
 
 ```toml
 [config]
-model = "anthropic/claude-sonnet-4-20250514"
+model = "claude-sonnet-4-20250514"
 enable_auto_approval = true
 max_model_tokens = 1000000
 use_cursor_rules = true  # Enable Cursor rules (default: true)

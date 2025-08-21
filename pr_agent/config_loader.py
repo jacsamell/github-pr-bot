@@ -98,10 +98,10 @@ try:
         if openai_key:
             # Prefer GPT-5 if OpenAI key is present
             get_settings().set('config.model', 'gpt-5')
-            get_settings().set('config.fallback_models', ['anthropic/claude-sonnet-4-20250514'] if anthropic_key else [])
+            get_settings().set('config.fallback_models', ['claude-sonnet-4-20250514'] if anthropic_key else [])
         elif anthropic_key:
             # Fall back to Claude Sonnet 4 if only Anthropic is present
-            get_settings().set('config.model', 'anthropic/claude-sonnet-4-20250514')
+            get_settings().set('config.model', 'claude-sonnet-4-20250514')
         # else: leave as-is, user must set
 except Exception:
     # Silent: don’t block initialization if auto-detect fails

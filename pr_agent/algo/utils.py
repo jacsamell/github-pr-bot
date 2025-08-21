@@ -1006,6 +1006,11 @@ def get_max_tokens(model):
     This aims to improve the algorithmic quality, as the AI model degrades in performance when the input is too long.
     """
     settings = get_settings()
+    # Back-compat: map known Anthropic prefixes to canonical keys in MAX_TOKENS
+    if model not in MAX_TOKENS:
+        if model == "claude-sonnet-4-20250514":
+            model = "anthropic/claude-sonnet-4-20250514"
+
     if model in MAX_TOKENS:
         max_tokens_model = MAX_TOKENS[model]
     elif settings.config.custom_model_max_tokens > 0:

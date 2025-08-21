@@ -27,9 +27,9 @@ inputs:
     required: false
     default: 'false'
   model:
-    description: 'AI model to use (e.g., anthropic/claude-sonnet-4-20250514)'
+    description: 'AI model to use (e.g., claude-sonnet-4-20250514)'
     required: false
-    default: 'anthropic/claude-sonnet-4-20250514'
+    default: 'claude-sonnet-4-20250514'
   max_model_tokens:
     description: 'Maximum tokens for AI model'
     required: false

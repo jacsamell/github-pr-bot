@@ -80,6 +80,7 @@ MAX_TOKENS = {
     'anthropic/claude-3-5-sonnet-20241022': 100000,
     'anthropic/claude-3-7-sonnet-20250219': 200000,
     'claude-3-7-sonnet-20250219': 200000,
+    'claude-sonnet-4-20250514': 1000000,
     'anthropic/claude-3-5-haiku-20241022': 100000,
     'bedrock/anthropic.claude-instant-v1': 100000,
     'bedrock/anthropic.claude-v2': 100000,
@@ -167,7 +168,8 @@ SUPPORT_REASONING_EFFORT_MODELS = [
 
 CLAUDE_EXTENDED_THINKING_MODELS = [
     "anthropic/claude-opus-4-20250514",
-    "anthropic/claude-sonnet-4-20250514", 
+    "anthropic/claude-sonnet-4-20250514",
+    "claude-sonnet-4-20250514",
     "anthropic/claude-3-7-sonnet-20250219",
     "claude-3-7-sonnet-20250219"
 ]
