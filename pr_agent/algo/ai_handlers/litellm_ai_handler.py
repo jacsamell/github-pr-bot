@@ -426,7 +426,7 @@ class LiteLLMAIHandler(BaseAiHandler):
             if self.repetition_penalty:
                 kwargs["repetition_penalty"] = self.repetition_penalty
 
-            #Added support for extra_headers while using litellm to call underlying model, via a api management gateway, would allow for passing custom headers for security and authorization
+            # Added support for extra_headers while using litellm to call underlying model, via a api management gateway, would allow for passing custom headers for security and authorization
             if get_settings().get("LITELLM.EXTRA_HEADERS", None):
                 try:
                     litellm_extra_headers = json.loads(get_settings().litellm.extra_headers)
@@ -434,7 +434,22 @@ class LiteLLMAIHandler(BaseAiHandler):
                         raise ValueError("LITELLM.EXTRA_HEADERS must be a JSON object")
                 except json.JSONDecodeError as e:
                     raise ValueError(f"LITELLM.EXTRA_HEADERS contains invalid JSON: {str(e)}")
-                kwargs["extra_headers"] = litellm_extra_headers
+                # Merge with any pre-existing headers
+                merged_headers = dict(kwargs.get("extra_headers", {}))
+                merged_headers.update(litellm_extra_headers)
+                kwargs["extra_headers"] = merged_headers
+
+            # Ensure Anthropic 1M-context beta is enabled for relevant Claude models (not Bedrock)
+            try:
+                if (
+                    ("claude" in model.lower() or model.lower().startswith("anthropic/"))
+                    and not model.lower().startswith("bedrock/")
+                ):
+                    headers = dict(kwargs.get("extra_headers", {}))
+                    headers.setdefault("anthropic-beta", "context-1m-2025-08-07")
+                    kwargs["extra_headers"] = headers
+            except Exception as e:
+                get_logger().debug(f"Unable to set Anthropic beta header: {e}")
 
             get_logger().debug("Prompts", artifact={"system": system, "user": user})
 
